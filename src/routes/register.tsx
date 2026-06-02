@@ -9,6 +9,11 @@ import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
+import {
+  startSignup,
+  verifySignupCode,
+  resendSignupCode,
+} from "@/lib/auth-otp.functions";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up — WorkBridge" }] }),
@@ -43,44 +48,41 @@ function RegisterPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
+    try {
+      await startSignup({ data: { email, password, fullName } });
+      toast.success("We sent a 6-digit code to your email");
+      setStep("verify");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign up failed");
       return;
+    } finally {
+      setLoading(false);
     }
-    toast.success("We sent a 6-digit code to your email");
-    setStep("verify");
   };
 
   const verify = async (e: FormEvent) => {
     e.preventDefault();
     setVerifying(true);
     const cleanOtp = otp.replace(/\D/g, "").slice(0, 6);
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token: cleanOtp,
-      type: "email",
-    });
-    if (error) {
+    try {
+      await verifySignupCode({ data: { email, code: cleanOtp } });
+    } catch (err) {
       setVerifying(false);
-      toast.error(error.message);
+      toast.error(err instanceof Error ? err.message : "Invalid code");
       return;
     }
-    const activeSession = data.session ?? (await supabase.auth.signInWithPassword({ email, password })).data.session;
 
-    if (!activeSession) {
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInErr || !signInData.session) {
       setVerifying(false);
-      toast.error("Code is correct, but sign-in did not complete. Please log in once.");
+      toast.error(signInErr?.message ?? "Sign-in failed after verification");
       navigate({ to: "/login", replace: true });
       return;
     }
+    const activeSession = signInData.session;
 
     if (avatarFile) {
       const uid = activeSession.user.id;
@@ -98,10 +100,14 @@ function RegisterPage() {
 
   const resend = async () => {
     setResending(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    setResending(false);
-    if (error) toast.error(error.message);
-    else toast.success("New code sent");
+    try {
+      await resendSignupCode({ data: { email } });
+      toast.success("New code sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resend");
+    } finally {
+      setResending(false);
+    }
   };
 
   const google = async () => {
