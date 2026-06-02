@@ -121,9 +121,16 @@ function Onboarding() {
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Country</Label>
-                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
-                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>City</Label>
