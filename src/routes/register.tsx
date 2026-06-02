@@ -25,9 +25,6 @@ function RegisterPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<"form" | "sent">("form");
-  const [resending, setResending] = useState(false);
-
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -63,7 +60,6 @@ function RegisterPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
           data: { full_name: fullName },
         },
       });
@@ -80,25 +76,9 @@ function RegisterPage() {
         };
         reader.readAsDataURL(avatarFile);
       }
-      toast.success("Confirmation email sent");
-      setStep("sent");
+      toast.success("Account created");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const resend = async () => {
-    setResending(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
-      });
-      if (error) toast.error(error.message);
-      else toast.success("Confirmation email resent");
-    } finally {
-      setResending(false);
     }
   };
 
@@ -118,7 +98,6 @@ function RegisterPage() {
           <div className="flex items-center gap-3 my-4 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
           </div>
-          {step === "form" ? (
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="flex flex-col items-center gap-2">
               <button
@@ -155,22 +134,6 @@ function RegisterPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating..." : "Create account"}</Button>
           </form>
-          ) : (
-          <div className="space-y-4 text-center">
-            <div className="mx-auto size-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">📧</div>
-            <h2 className="text-lg font-semibold">Check your email</h2>
-            <p className="text-sm text-muted-foreground">
-              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
-              Click the link in the email to confirm your account — you'll be signed in automatically.
-            </p>
-            <div className="flex justify-between text-sm pt-2">
-              <button type="button" onClick={() => setStep("form")} className="text-muted-foreground hover:underline">Back</button>
-              <button type="button" onClick={resend} disabled={resending} className="text-primary hover:underline disabled:opacity-50">
-                {resending ? "Sending..." : "Resend email"}
-              </button>
-            </div>
-          </div>
-          )}
           <p className="mt-6 text-sm text-muted-foreground text-center">
             Already have an account? <Link to="/login" className="text-primary hover:underline">Log in</Link>
           </p>
