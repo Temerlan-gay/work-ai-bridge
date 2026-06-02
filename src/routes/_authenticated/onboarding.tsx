@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { COUNTRIES, SPECIALIZATIONS } from "@/lib/categories";
 import { toast } from "sonner";
 import { Briefcase, User } from "lucide-react";
@@ -114,9 +121,16 @@ function Onboarding() {
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Country</Label>
-                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
-                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>City</Label>
@@ -129,15 +143,16 @@ function Onboarding() {
               </div>
               <div className="space-y-1.5">
                 <Label>Specialization</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-                  value={specializationChoice}
-                  onChange={(e) => setSpecializationChoice(e.target.value)}
-                >
-                  {SPECIALIZATIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <Select value={specializationChoice} onValueChange={setSpecializationChoice}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPECIALIZATIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {specializationChoice === "Other" && (
                   <Input
                     className="mt-2"
