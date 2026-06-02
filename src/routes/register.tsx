@@ -29,7 +29,7 @@ function RegisterPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -38,8 +38,16 @@ function RegisterPage() {
       },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success("Check your email to confirm your account.");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (data.session) {
+      toast.success("Account created!");
+      navigate({ to: "/onboarding", replace: true });
+    } else {
+      toast.success("Check your email to confirm your account.");
+    }
   };
 
   const google = async () => {
