@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { COUNTRIES } from "@/lib/categories";
+import { COUNTRIES, SPECIALIZATIONS } from "@/lib/categories";
 import { toast } from "sonner";
 import { Briefcase, User } from "lucide-react";
 
@@ -25,11 +25,11 @@ function Onboarding() {
   const [country, setCountry] = useState<string>("Russia");
   const [city, setCity] = useState("");
   const [age, setAge] = useState<string>("");
-  const [specialization, setSpecialization] = useState("");
+  const [specializationChoice, setSpecializationChoice] = useState<string>("Fullstack Developer");
+  const [specializationOther, setSpecializationOther] = useState("");
   const [skills, setSkills] = useState("");
   const [bio, setBio] = useState("");
   const [github, setGithub] = useState("");
-  const [telegram, setTelegram] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -47,6 +47,8 @@ function Onboarding() {
   const save = async () => {
     if (!user) return;
     setSaving(true);
+    const specialization =
+      specializationChoice === "Other" ? specializationOther.trim() : specializationChoice;
     const { error } = await supabase.from("profiles").update({
       full_name: fullName,
       nickname: nickname || null,
@@ -57,7 +59,7 @@ function Onboarding() {
       specialization,
       skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
       bio,
-      links: { github, telegram, linkedin },
+      links: { github, linkedin },
       onboarded: true,
     }).eq("id", user.id);
     // also seed user_roles
@@ -127,7 +129,23 @@ function Onboarding() {
               </div>
               <div className="space-y-1.5">
                 <Label>Specialization</Label>
-                <Input placeholder="e.g. Full-stack developer" value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                  value={specializationChoice}
+                  onChange={(e) => setSpecializationChoice(e.target.value)}
+                >
+                  {SPECIALIZATIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {specializationChoice === "Other" && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Enter your specialization"
+                    value={specializationOther}
+                    onChange={(e) => setSpecializationOther(e.target.value)}
+                  />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Skills (comma-separated)</Label>
@@ -149,14 +167,10 @@ function Onboarding() {
                 <Label>Bio</Label>
                 <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
               </div>
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>GitHub</Label>
                   <Input placeholder="username" value={github} onChange={(e) => setGithub(e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Telegram</Label>
-                  <Input placeholder="@username" value={telegram} onChange={(e) => setTelegram(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>LinkedIn</Label>
