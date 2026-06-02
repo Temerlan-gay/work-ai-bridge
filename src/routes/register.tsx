@@ -47,7 +47,6 @@ function RegisterPage() {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin + "/onboarding",
         data: { full_name: fullName },
       },
     });
@@ -63,9 +62,10 @@ function RegisterPage() {
   const verify = async (e: FormEvent) => {
     e.preventDefault();
     setVerifying(true);
+    const cleanOtp = otp.replace(/\D/g, "").slice(0, 6);
     const { data, error } = await supabase.auth.verifyOtp({
       email,
-      token: otp.trim(),
+      token: cleanOtp,
       type: "email",
     });
     if (error) {
@@ -73,8 +73,17 @@ function RegisterPage() {
       toast.error(error.message);
       return;
     }
-    if (data.session && avatarFile) {
-      const uid = data.session.user.id;
+    const activeSession = data.session ?? (await supabase.auth.signInWithPassword({ email, password })).data.session;
+
+    if (!activeSession) {
+      setVerifying(false);
+      toast.error("Code is correct, but sign-in did not complete. Please log in once.");
+      navigate({ to: "/login", replace: true });
+      return;
+    }
+
+    if (avatarFile) {
+      const uid = activeSession.user.id;
       const path = `${uid}/avatar-${Date.now()}-${avatarFile.name}`;
       const { error: upErr } = await supabase.storage.from("avatars").upload(path, avatarFile);
       if (!upErr) {
@@ -158,8 +167,9 @@ function RegisterPage() {
                 autoComplete="one-time-code"
                 placeholder="123456"
                 required
+                maxLength={6}
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               />
               <p className="text-xs text-muted-foreground">We sent a 6-digit code to {email}</p>
             </div>
