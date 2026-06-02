@@ -27,3 +27,25 @@ export const COUNTRIES = [
   "Turkmenistan",
   "Other",
 ] as const;
+
+export const SPECIALIZATIONS = [
+  "Fullstack Developer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Mobile Developer",
+  "UI/UX Designer",
+  "Graphic Designer",
+  "Product Designer",
+  "Marketer",
+  "SMM Manager",
+  "Copywriter",
+  "Video Editor",
+  "Motion Designer",
+  "Translator",
+  "Photographer",
+  "QA Engineer",
+  "DevOps Engineer",
+  "Data Analyst",
+  "Project Manager",
+  "Other",
+] as const;
