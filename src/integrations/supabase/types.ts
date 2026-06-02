@@ -14,16 +14,368 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chats: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string | null
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string | null
+          chat_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          body?: string | null
+          chat_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          body?: string | null
+          chat_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      portfolio_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          link: string | null
+          technologies: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          technologies?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          technologies?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          full_name: string | null
+          hourly_rate: number | null
+          id: string
+          kind: Database["public"]["Enums"]["user_kind"]
+          languages: string[] | null
+          links: Json | null
+          nickname: string | null
+          onboarded: boolean
+          skills: string[] | null
+          specialization: string | null
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          full_name?: string | null
+          hourly_rate?: number | null
+          id: string
+          kind?: Database["public"]["Enums"]["user_kind"]
+          languages?: string[] | null
+          links?: Json | null
+          nickname?: string | null
+          onboarded?: boolean
+          skills?: string[] | null
+          specialization?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          full_name?: string | null
+          hourly_rate?: number | null
+          id?: string
+          kind?: Database["public"]["Enums"]["user_kind"]
+          languages?: string[] | null
+          links?: Json | null
+          nickname?: string | null
+          onboarded?: boolean
+          skills?: string[] | null
+          specialization?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          attachments: string[] | null
+          budget: number | null
+          category: string
+          client_id: string
+          created_at: string
+          deadline: string | null
+          description: string
+          freelancer_id: string | null
+          id: string
+          skills_required: string[] | null
+          status: Database["public"]["Enums"]["project_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          budget?: number | null
+          category: string
+          client_id: string
+          created_at?: string
+          deadline?: string | null
+          description: string
+          freelancer_id?: string | null
+          id?: string
+          skills_required?: string[] | null
+          status?: Database["public"]["Enums"]["project_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: string[] | null
+          budget?: number | null
+          category?: string
+          client_id?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          freelancer_id?: string | null
+          id?: string
+          skills_required?: string[] | null
+          status?: Database["public"]["Enums"]["project_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      proposals: {
+        Row: {
+          cover_letter: string
+          created_at: string
+          delivery_days: number
+          freelancer_id: string
+          id: string
+          price: number
+          project_id: string
+          status: Database["public"]["Enums"]["proposal_status"]
+        }
+        Insert: {
+          cover_letter: string
+          created_at?: string
+          delivery_days?: number
+          freelancer_id: string
+          id?: string
+          price: number
+          project_id: string
+          status?: Database["public"]["Enums"]["proposal_status"]
+        }
+        Update: {
+          cover_letter?: string
+          created_at?: string
+          delivery_days?: number
+          freelancer_id?: string
+          id?: string
+          price?: number
+          project_id?: string
+          status?: Database["public"]["Enums"]["proposal_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          from_user: string
+          id: string
+          project_id: string
+          rating: number
+          to_user: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          from_user: string
+          id?: string
+          project_id: string
+          rating: number
+          to_user: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          from_user?: string
+          id?: string
+          project_id?: string
+          rating?: number
+          to_user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "freelancer" | "client"
+      project_status: "open" | "in_progress" | "completed" | "cancelled"
+      proposal_status: "pending" | "accepted" | "rejected" | "withdrawn"
+      user_kind: "freelancer" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +502,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "freelancer", "client"],
+      project_status: ["open", "in_progress", "completed", "cancelled"],
+      proposal_status: ["pending", "accepted", "rejected", "withdrawn"],
+      user_kind: ["freelancer", "client"],
+    },
   },
 } as const
