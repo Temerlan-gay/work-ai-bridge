@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Camera } from "lucide-react";
+import { Camera, MailCheck } from "lucide-react";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up — WorkBridge" }] }),
@@ -22,11 +22,13 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [resending, setResending] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.email_confirmed_at) return;
     (async () => {
       const pending = sessionStorage.getItem("pendingAvatar");
       if (pending) {
@@ -61,6 +63,7 @@ function RegisterPage() {
         password,
         options: {
           data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/onboarding`,
         },
       });
       if (error) {
@@ -76,16 +79,53 @@ function RegisterPage() {
         };
         reader.readAsDataURL(avatarFile);
       }
-      toast.success("Account created");
+      setSent(true);
+      toast.success("Confirmation email sent");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resend = async () => {
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+    });
+    setResending(false);
+    if (error) toast.error(error.message);
+    else toast.success("Confirmation email re-sent");
   };
 
   const google = async () => {
     const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/onboarding" });
     if (res.error) toast.error(res.error.message);
   };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <SiteHeader />
+        <main className="flex items-center justify-center px-4 py-16">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm text-center animate-fade-in">
+            <div className="mx-auto mb-4 size-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <MailCheck className="size-7 text-primary" />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">Check your inbox</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              We sent a confirmation link to <span className="text-foreground font-medium">{email}</span>.
+              Open it to activate your account — you'll be signed in automatically.
+            </p>
+            <Button onClick={resend} disabled={resending} variant="outline" className="w-full mb-3">
+              {resending ? "Sending…" : "Resend email"}
+            </Button>
+            <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">Back to log in</Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
