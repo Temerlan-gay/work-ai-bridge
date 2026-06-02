@@ -40,10 +40,17 @@ function ProjectsBrowse() {
         <h1 className="text-3xl font-semibold tracking-tight mb-6">Open projects</h1>
         <div className="flex flex-wrap gap-3 mb-6">
           <Input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
-          <select className="h-9 rounded-md border border-input bg-transparent px-3 text-sm" value={cat} onChange={(e) => setCat(e.target.value)}>
-            <option value="">All categories</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={cat} onValueChange={setCat}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No projects match your search.</p>
