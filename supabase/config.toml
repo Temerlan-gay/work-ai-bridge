@@ -1,1 +1,5 @@
 project_id = "wtrhupgspcrsuzrkepth"
+
+[auth.email.template.confirmation]
+subject = "Your WorkBridge verification code"
+content_path = "./supabase/templates/confirmation.html"
