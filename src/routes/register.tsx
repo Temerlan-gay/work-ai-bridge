@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent, useEffect } from "react";
+import { useState, type FormEvent, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { Camera } from "lucide-react";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up — WorkBridge" }] }),
@@ -21,10 +22,19 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) navigate({ to: "/onboarding", replace: true });
   }, [user, navigate]);
+
+  const onPickAvatar = (f: File | null) => {
+    if (!f) return;
+    setAvatarFile(f);
+    setAvatarPreview(URL.createObjectURL(f));
+  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,11 +47,21 @@ function RegisterPage() {
         data: { full_name: fullName },
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+    if (data.session && avatarFile) {
+      const uid = data.session.user.id;
+      const path = `${uid}/avatar-${Date.now()}-${avatarFile.name}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, avatarFile);
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", uid);
+      }
+    }
+    setLoading(false);
     if (data.session) {
       toast.success("Account created!");
       navigate({ to: "/onboarding", replace: true });
@@ -67,6 +87,27 @@ function RegisterPage() {
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
           </div>
           <form onSubmit={onSubmit} className="space-y-4">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="relative size-20 rounded-full border-2 border-dashed border-border bg-muted/40 flex items-center justify-center overflow-hidden hover:bg-muted transition"
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="size-6 text-muted-foreground" />
+                )}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onPickAvatar(e.target.files?.[0] ?? null)}
+              />
+              <span className="text-xs text-muted-foreground">Upload profile photo (optional)</span>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="fullName">Full name</Label>
               <Input id="fullName" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
