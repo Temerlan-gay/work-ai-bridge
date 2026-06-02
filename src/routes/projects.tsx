@@ -25,7 +25,7 @@ function ProjectsBrowse() {
   useEffect(() => {
     (async () => {
       let query = supabase.from("projects").select("*").eq("status", "open").order("created_at", { ascending: false });
-      if (cat) query = query.eq("category", cat);
+      if (cat && cat !== "all") query = query.eq("category", cat);
       const { data } = await query;
       setItems(data ?? []);
     })();
