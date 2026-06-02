@@ -9,11 +9,6 @@ import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
-import {
-  startSignup,
-  verifySignupCode,
-  resendSignupCode,
-} from "@/lib/auth-otp.functions";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up — WorkBridge" }] }),
@@ -30,13 +25,28 @@ function RegisterPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<"form" | "verify">("form");
-  const [otp, setOtp] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  const [step, setStep] = useState<"form" | "sent">("form");
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/onboarding", replace: true });
+    if (!user) return;
+    (async () => {
+      const pending = sessionStorage.getItem("pendingAvatar");
+      if (pending) {
+        try {
+          const res = await fetch(pending);
+          const blob = await res.blob();
+          const path = `${user.id}/avatar-${Date.now()}.${blob.type.split("/")[1] || "png"}`;
+          const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob);
+          if (!upErr) {
+            const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+            await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", user.id);
+          }
+        } catch {}
+        sessionStorage.removeItem("pendingAvatar");
+      }
+      navigate({ to: "/onboarding", replace: true });
+    })();
   }, [user, navigate]);
 
   const onPickAvatar = (f: File | null) => {
@@ -49,62 +59,44 @@ function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await startSignup({ data: { email, password, fullName } });
-      toast.success("We sent a 6-digit code to your email");
-      setStep("verify");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign up failed");
-      return;
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/onboarding`,
+          data: { full_name: fullName },
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (avatarFile) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            sessionStorage.setItem("pendingAvatar", reader.result);
+          }
+        };
+        reader.readAsDataURL(avatarFile);
+      }
+      toast.success("Confirmation email sent");
+      setStep("sent");
     } finally {
       setLoading(false);
     }
   };
 
-  const verify = async (e: FormEvent) => {
-    e.preventDefault();
-    setVerifying(true);
-    const cleanOtp = otp.replace(/\D/g, "").slice(0, 6);
-    try {
-      await verifySignupCode({ data: { email, code: cleanOtp } });
-    } catch (err) {
-      setVerifying(false);
-      toast.error(err instanceof Error ? err.message : "Invalid code");
-      return;
-    }
-
-    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signInErr || !signInData.session) {
-      setVerifying(false);
-      toast.error(signInErr?.message ?? "Sign-in failed after verification");
-      navigate({ to: "/login", replace: true });
-      return;
-    }
-    const activeSession = signInData.session;
-
-    if (avatarFile) {
-      const uid = activeSession.user.id;
-      const path = `${uid}/avatar-${Date.now()}-${avatarFile.name}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, avatarFile);
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-        await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", uid);
-      }
-    }
-    setVerifying(false);
-    toast.success("Email verified!");
-    navigate({ to: "/onboarding", replace: true });
-  };
-
   const resend = async () => {
     setResending(true);
     try {
-      await resendSignupCode({ data: { email } });
-      toast.success("New code sent");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to resend");
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+      });
+      if (error) toast.error(error.message);
+      else toast.success("Confirmation email resent");
     } finally {
       setResending(false);
     }
@@ -164,29 +156,20 @@ function RegisterPage() {
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating..." : "Create account"}</Button>
           </form>
           ) : (
-          <form onSubmit={verify} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="otp">Verification code</Label>
-              <Input
-                id="otp"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                required
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              />
-              <p className="text-xs text-muted-foreground">We sent a 6-digit code to {email}</p>
-            </div>
-            <Button type="submit" className="w-full" disabled={verifying}>{verifying ? "Verifying..." : "Verify & continue"}</Button>
-            <div className="flex justify-between text-sm">
+          <div className="space-y-4 text-center">
+            <div className="mx-auto size-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">📧</div>
+            <h2 className="text-lg font-semibold">Check your email</h2>
+            <p className="text-sm text-muted-foreground">
+              We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
+              Click the link in the email to confirm your account — you'll be signed in automatically.
+            </p>
+            <div className="flex justify-between text-sm pt-2">
               <button type="button" onClick={() => setStep("form")} className="text-muted-foreground hover:underline">Back</button>
               <button type="button" onClick={resend} disabled={resending} className="text-primary hover:underline disabled:opacity-50">
-                {resending ? "Sending..." : "Resend code"}
+                {resending ? "Sending..." : "Resend email"}
               </button>
             </div>
-          </form>
+          </div>
           )}
           <p className="mt-6 text-sm text-muted-foreground text-center">
             Already have an account? <Link to="/login" className="text-primary hover:underline">Log in</Link>
