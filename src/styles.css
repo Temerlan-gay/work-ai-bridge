@@ -100,12 +100,12 @@
 
 .dark {
   /* Soft deep navy dark theme — not pure black, calm contrast */
-  --background: oklch(0.21 0.025 260);
-  --foreground: oklch(0.94 0.01 250);
-  --card: oklch(0.255 0.028 260);
-  --card-foreground: oklch(0.94 0.01 250);
-  --popover: oklch(0.255 0.028 260);
-  --popover-foreground: oklch(0.94 0.01 250);
+  --background: oklch(0.17 0.025 260);
+  --foreground: oklch(0.96 0.01 250);
+  --card: oklch(0.225 0.03 260);
+  --card-foreground: oklch(0.96 0.01 250);
+  --popover: oklch(0.225 0.03 260);
+  --popover-foreground: oklch(0.96 0.01 250);
   --primary: oklch(0.7 0.14 250);
   --primary-foreground: oklch(0.18 0.03 260);
   --secondary: oklch(0.31 0.03 260);
