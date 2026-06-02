@@ -21,9 +21,15 @@ function ResetPage() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
+    await supabase.auth.signOut();
     setLoading(false);
-    if (error) toast.error(error.message);
-    else { toast.success("Password updated"); navigate({ to: "/dashboard" }); }
+    toast.success("Password updated. Please log in.");
+    navigate({ to: "/login", replace: true });
   };
 
   return (
