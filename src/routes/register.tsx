@@ -25,6 +25,10 @@ function RegisterPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     if (user) navigate({ to: "/onboarding", replace: true });
@@ -39,7 +43,7 @@ function RegisterPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -47,8 +51,25 @@ function RegisterPage() {
         data: { full_name: fullName },
       },
     });
+    setLoading(false);
     if (error) {
-      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
+    toast.success("We sent a 6-digit code to your email");
+    setStep("verify");
+  };
+
+  const verify = async (e: FormEvent) => {
+    e.preventDefault();
+    setVerifying(true);
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp.trim(),
+      type: "email",
+    });
+    if (error) {
+      setVerifying(false);
       toast.error(error.message);
       return;
     }
@@ -61,13 +82,17 @@ function RegisterPage() {
         await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", uid);
       }
     }
-    setLoading(false);
-    if (data.session) {
-      toast.success("Account created!");
-      navigate({ to: "/onboarding", replace: true });
-    } else {
-      toast.success("Check your email to confirm your account.");
-    }
+    setVerifying(false);
+    toast.success("Email verified!");
+    navigate({ to: "/onboarding", replace: true });
+  };
+
+  const resend = async () => {
+    setResending(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setResending(false);
+    if (error) toast.error(error.message);
+    else toast.success("New code sent");
   };
 
   const google = async () => {
@@ -86,6 +111,7 @@ function RegisterPage() {
           <div className="flex items-center gap-3 my-4 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
           </div>
+          {step === "form" ? (
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="flex flex-col items-center gap-2">
               <button
@@ -122,6 +148,30 @@ function RegisterPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating..." : "Create account"}</Button>
           </form>
+          ) : (
+          <form onSubmit={verify} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="otp">Verification code</Label>
+              <Input
+                id="otp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                required
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">We sent a 6-digit code to {email}</p>
+            </div>
+            <Button type="submit" className="w-full" disabled={verifying}>{verifying ? "Verifying..." : "Verify & continue"}</Button>
+            <div className="flex justify-between text-sm">
+              <button type="button" onClick={() => setStep("form")} className="text-muted-foreground hover:underline">Back</button>
+              <button type="button" onClick={resend} disabled={resending} className="text-primary hover:underline disabled:opacity-50">
+                {resending ? "Sending..." : "Resend code"}
+              </button>
+            </div>
+          </form>
+          )}
           <p className="mt-6 text-sm text-muted-foreground text-center">
             Already have an account? <Link to="/login" className="text-primary hover:underline">Log in</Link>
           </p>
