@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as FreelancersUsernameRouteImport } from './routes/freelancers.$username'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatsRouteImport } from './routes/_authenticated/chats'
@@ -75,6 +76,11 @@ const FreelancersUsernameRoute = FreelancersUsernameRouteImport.update({
   path: '/$username',
   getParentRoute: () => FreelancersRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/chats': typeof AuthenticatedChatsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated/chats': typeof AuthenticatedChatsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/_authenticated/chats/$id': typeof AuthenticatedChatsIdRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/chats'
     | '/dashboard'
     | '/onboarding'
+    | '/settings'
     | '/freelancers/$username'
     | '/projects/$id'
     | '/chats/$id'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard'
     | '/onboarding'
+    | '/settings'
     | '/freelancers/$username'
     | '/projects/$id'
     | '/chats/$id'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chats'
     | '/_authenticated/dashboard'
     | '/_authenticated/onboarding'
+    | '/_authenticated/settings'
     | '/freelancers/$username'
     | '/projects/$id'
     | '/_authenticated/chats/$id'
@@ -296,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FreelancersUsernameRouteImport
       parentRoute: typeof FreelancersRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -358,6 +377,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChatsRoute: typeof AuthenticatedChatsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedProjectsNewRoute: typeof AuthenticatedProjectsNewRoute
 }
 
@@ -365,6 +385,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatsRoute: AuthenticatedChatsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedProjectsNewRoute: AuthenticatedProjectsNewRoute,
 }
 
