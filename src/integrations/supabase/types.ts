@@ -454,6 +454,54 @@ export type Database = {
         }
         Relationships: []
       }
+      workcoin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          project_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workcoin_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       freelancer_directory: {
@@ -481,6 +529,15 @@ export type Database = {
       }
     }
     Functions: {
+      award_workcoins: {
+        Args: {
+          p_amount: number
+          p_project_id: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       get_my_chat_streaks: {
         Args: never
         Returns: {
