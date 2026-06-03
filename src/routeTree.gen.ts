@@ -18,6 +18,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
+import { Route as FreelancersUsernameRouteImport } from './routes/freelancers.$username'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatsRouteImport } from './routes/_authenticated/chats'
@@ -69,6 +70,11 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const FreelancersUsernameRoute = FreelancersUsernameRouteImport.update({
+  id: '/$username',
+  path: '/$username',
+  getParentRoute: () => FreelancersRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -104,7 +110,7 @@ const AuthenticatedChatsIdRoute = AuthenticatedChatsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/freelancers': typeof FreelancersRoute
+  '/freelancers': typeof FreelancersRouteWithChildren
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/chats': typeof AuthenticatedChatsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
@@ -120,13 +127,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/freelancers': typeof FreelancersRoute
+  '/freelancers': typeof FreelancersRouteWithChildren
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
@@ -137,7 +145,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
-  '/freelancers': typeof FreelancersRoute
+  '/freelancers': typeof FreelancersRouteWithChildren
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_authenticated/chats': typeof AuthenticatedChatsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/freelancers/$username': typeof FreelancersUsernameRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/_authenticated/chats/$id': typeof AuthenticatedChatsIdRoute
   '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/chats'
     | '/dashboard'
     | '/onboarding'
+    | '/freelancers/$username'
     | '/projects/$id'
     | '/chats/$id'
     | '/projects/new'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard'
     | '/onboarding'
+    | '/freelancers/$username'
     | '/projects/$id'
     | '/chats/$id'
     | '/projects/new'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chats'
     | '/_authenticated/dashboard'
     | '/_authenticated/onboarding'
+    | '/freelancers/$username'
     | '/projects/$id'
     | '/_authenticated/chats/$id'
     | '/_authenticated/projects/new'
@@ -205,7 +217,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
-  FreelancersRoute: typeof FreelancersRoute
+  FreelancersRoute: typeof FreelancersRouteWithChildren
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RegisterRoute: typeof RegisterRoute
@@ -276,6 +288,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/$id'
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof ProjectsRoute
+    }
+    '/freelancers/$username': {
+      id: '/freelancers/$username'
+      path: '/$username'
+      fullPath: '/freelancers/$username'
+      preLoaderRoute: typeof FreelancersUsernameRouteImport
+      parentRoute: typeof FreelancersRoute
     }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
@@ -353,6 +372,18 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface FreelancersRouteChildren {
+  FreelancersUsernameRoute: typeof FreelancersUsernameRoute
+}
+
+const FreelancersRouteChildren: FreelancersRouteChildren = {
+  FreelancersUsernameRoute: FreelancersUsernameRoute,
+}
+
+const FreelancersRouteWithChildren = FreelancersRoute._addFileChildren(
+  FreelancersRouteChildren,
+)
+
 interface ProjectsRouteChildren {
   ProjectsIdRoute: typeof ProjectsIdRoute
 }
@@ -369,7 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
-  FreelancersRoute: FreelancersRoute,
+  FreelancersRoute: FreelancersRouteWithChildren,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RegisterRoute: RegisterRoute,
@@ -378,13 +409,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

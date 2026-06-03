@@ -183,6 +183,7 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          availability: string
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -193,15 +194,19 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["user_kind"]
           languages: string[] | null
+          last_seen_at: string | null
           links: Json | null
           nickname: string | null
           onboarded: boolean
           skills: string[] | null
           specialization: string | null
           updated_at: string
+          username: string | null
+          years_experience: number | null
         }
         Insert: {
           age?: number | null
+          availability?: string
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -212,15 +217,19 @@ export type Database = {
           id: string
           kind?: Database["public"]["Enums"]["user_kind"]
           languages?: string[] | null
+          last_seen_at?: string | null
           links?: Json | null
           nickname?: string | null
           onboarded?: boolean
           skills?: string[] | null
           specialization?: string | null
           updated_at?: string
+          username?: string | null
+          years_experience?: number | null
         }
         Update: {
           age?: number | null
+          availability?: string
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -231,12 +240,15 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["user_kind"]
           languages?: string[] | null
+          last_seen_at?: string | null
           links?: Json | null
           nickname?: string | null
           onboarded?: boolean
           skills?: string[] | null
           specialization?: string | null
           updated_at?: string
+          username?: string | null
+          years_experience?: number | null
         }
         Relationships: []
       }
@@ -367,6 +379,36 @@ export type Database = {
           },
         ]
       }
+      skill_catalog: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_custom: boolean
+          name: string
+          name_lower: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_custom?: boolean
+          name: string
+          name_lower?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_custom?: boolean
+          name?: string
+          name_lower?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -390,7 +432,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      freelancer_directory: {
+        Row: {
+          availability: string | null
+          avatar_url: string | null
+          avg_rating: number | null
+          bio: string | null
+          city: string | null
+          completed_projects: number | null
+          country: string | null
+          created_at: string | null
+          full_name: string | null
+          hourly_rate: number | null
+          id: string | null
+          last_seen_at: string | null
+          nickname: string | null
+          reviews_count: number | null
+          skills: string[] | null
+          specialization: string | null
+          username: string | null
+          years_experience: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -400,6 +464,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_presence: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "freelancer" | "client"

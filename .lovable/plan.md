@@ -1,64 +1,96 @@
-# WorkBridge MVP Build Plan
+## Overview
 
-A full freelance marketplace built on TanStack Start + Lovable Cloud (Supabase). Delivered in phases so each chunk is testable.
+Build an advanced freelancer registration, profile, and discovery system on top of the existing WorkBridge platform. Most pieces (auth, profiles, portfolio, chats) already exist — this plan extends them with: years of experience, expanded skill catalog with "Other" custom skills, online/availability/registration-date filters, completed-projects metric, ratings aggregation, and a modern filterable directory.
 
-## Phase 1 — Backend & Auth Foundation
-- Enable Lovable Cloud (Postgres + Auth + Storage).
-- Schema (migrations):
-  - `profiles` (id→auth.users, full_name, nickname, avatar_url, role enum: freelancer/client, bio, country, city, age, specialization, skills[], languages[], links jsonb, created_at)
-  - `user_roles` (separate table, `app_role` enum, `has_role()` security-definer fn)
-  - `portfolio_items` (user_id, title, description, image_url, link)
-  - `projects` (client_id, title, description, category, budget, deadline, status, created_at)
-  - `proposals` (project_id, freelancer_id, message, price, status)
-  - `chats` + `messages` (sender_id, chat_id, body, image_url, read_at)
-  - `reviews` (project_id, from_user, to_user, rating 1–5, comment)
-  - `notifications` (user_id, type, payload, read_at)
-- RLS policies on every table + GRANTs.
-- Storage buckets: `avatars`, `portfolio`, `chat-images` (public read where appropriate).
-- Trigger: auto-create profile row on signup.
+## Database changes (single migration)
 
-## Phase 2 — Auth UI
-- `/login`, `/register`, `/forgot-password`, `/reset-password`.
-- Email/password + Google OAuth (via Lovable broker).
-- `_authenticated` layout with redirect guard; root `onAuthStateChange` invalidation.
-- Multi-step onboarding `/onboarding` (role pick → personal info → skills/links → save).
+Extend existing tables — do not rebuild what's there:
 
-## Phase 3 — Dashboard (Personal Cabinet)
-Sidebar layout with sections:
-- About me / profile edit
-- Portfolio (CRUD + image uploads)
-- Orders (client: my projects; freelancer: active jobs)
-- Messages (chat list)
-- Notifications
-- Settings (change email/password, delete account, theme)
-- Stats (completed projects, earnings, avg rating)
+1. **`profiles`** — add columns:
+   - `username text unique` (validated lowercase a-z0-9_-, 3-30 chars)
+   - `years_experience integer`
+   - `availability text` ('available' | 'busy' | 'not_available'), default 'available'
+   - `last_seen_at timestamptz` (for online status: online if < 5 min ago)
+   - (already exists: full_name, bio, kind, country, city, specialization, skills[], hourly_rate, avatar_url, links, created_at)
 
-## Phase 4 — Projects & Search
-- `/projects/new` (client creates: title, desc, category, budget, deadline, photos).
-- `/projects` browse: filters by category, budget, rating, country; search box.
-- `/projects/$id` detail + proposal submission for freelancers.
-- `/freelancers` browse with rating filter.
+2. **`skill_catalog`** — new table for predefined + custom skills:
+   - `id uuid pk`, `name text unique`, `category text`, `is_custom bool`, `created_by uuid null`, `created_at`
+   - Seeded with the 20 skills from the request (Web Dev, Frontend, Backend, Full Stack, UI/UX, Graphic Design, Mobile, Python, JS, React, Vue, FastAPI, AI Dev, Copywriting, Translation, Video Editing, 3D Modeling, Game Dev, Marketing, SEO)
+   - RLS: public SELECT; authenticated INSERT for custom skills
 
-## Phase 5 — Chat
-- Realtime messages via Supabase realtime.
-- Reply, send images, online presence indicator, read receipts.
+3. **Views / RPC for stats** — a SQL function `get_freelancer_stats(uid)` returning `completed_projects` (count from `projects` where `freelancer_id=uid` and status='completed') and `avg_rating` (avg from `reviews` where `to_user=uid`). Or compute client-side.
 
-## Phase 6 — Reviews & Ratings
-- On project completion, client leaves 1–5 star review + comment.
-- Aggregate rating shown on freelancer profile.
+4. **`last_seen_at` trigger** — bump on auth via a lightweight `presence` RPC the client calls on a heartbeat.
 
-## Phase 7 — Polish
-- Light/Dark theme (already in place — softened).
-- Mobile-first responsive across all pages.
-- Smooth animations (Framer Motion).
-- Empty states, loading skeletons, toasts.
+GRANTs for every new public table; RLS policies scoped properly.
 
-## Technical Notes
-- Stack: TanStack Start (already configured), Tailwind v4, shadcn/ui, Supabase (Lovable Cloud), TanStack Query, Zod validation, Framer Motion.
-- All data access via `createServerFn` with `requireSupabaseAuth`; storage uploads from browser using user-scoped client.
-- Roles stored in `user_roles` table (never on profile) with `has_role()` SECURITY DEFINER.
+## Registration flow (`/register`)
 
-## Question before I start
-This is a 2–3 day build compressed into automated steps. I'll start with **Phase 1 + 2** (backend schema + auth + onboarding) so you can register and log in, then continue with dashboard, projects, chat, and reviews in subsequent turns.
+Single multi-section form (one page, scrollable):
+- Avatar upload, username, email, password, full name, bio (textarea)
+- Account type toggle: Client / Freelancer
+- If Freelancer: years of experience, hourly rate, skills multi-select (with "Other" → custom input that inserts into `skill_catalog`), categories multi-select
+- Email verification — keep current Supabase auto-confirm setup (user already disabled email confirmation). Just sign up + insert profile fields + redirect to dashboard. Portfolio upload happens on profile page after signup.
 
-Confirm and I'll enable Lovable Cloud and begin Phase 1.
+## Profile page (`/_authenticated/profile`)
+
+New route. Lets user edit all above fields + manage portfolio (upload images, title, description, tech tags, link) — uses existing `portfolio_items` table and `portfolio` storage bucket.
+
+## Freelancer directory (`/freelancers`)
+
+Rebuild the existing page with:
+- **Filters sidebar (sticky on desktop, sheet on mobile)**:
+  - Skills/categories multi-select (from `skill_catalog`)
+  - Country dropdown
+  - Hourly rate range slider
+  - Min rating (stars)
+  - Min completed projects
+  - Online status toggle (last_seen_at < 5 min)
+  - Availability dropdown
+  - Registration date range (last week / month / 3 months / year / all)
+- **Search bar**: name / username / bio full-text
+- **Sort**: rating, rate, recent, most projects
+- **Freelancer cards** (responsive grid): avatar, online dot, name + username, bio (truncated), top skills as badges, rating stars + count, completed projects, hourly rate, availability badge, "Message" button (→ creates/opens chat) and "View Profile" button (→ `/freelancers/$username`)
+
+## Public freelancer profile (`/freelancers/$username`)
+
+New route showing full profile + portfolio gallery + reviews + message CTA. SSR-friendly with proper head() meta.
+
+## Presence
+
+Lightweight: on app load (root) and every 60s, authenticated users call a server fn that updates `last_seen_at = now()` on their profile row.
+
+## Technical notes (for devs)
+
+- Add Zod validation for all forms
+- Use existing shadcn components (Select, Slider, Checkbox, Sheet, Badge, Card, Avatar)
+- Stats query: single SQL view `freelancer_directory` joining profiles + aggregated reviews + project counts — fetched via a public server fn using `supabaseAdmin` (read-only, safe columns)
+- Custom skill insertion: server fn with auth, dedupes by lowercased name
+- Update `src/lib/categories.ts` with the new SKILL_CATALOG constant as fallback
+- Online status computed client-side from `last_seen_at`
+- Realtime subscription on profiles for live online indicators (optional, can skip for v1)
+
+## Files to add/edit
+
+**New:**
+- migration (profiles columns, skill_catalog table + seed, freelancer_directory view, presence RPC)
+- `src/lib/freelancers.functions.ts` (list/search freelancers, get profile, add custom skill, update presence)
+- `src/routes/_authenticated/profile.tsx` (edit profile + portfolio)
+- `src/routes/freelancers.$username.tsx` (public profile)
+- `src/components/freelancer-card.tsx`
+- `src/components/freelancer-filters.tsx`
+- `src/components/skill-multi-select.tsx`
+- `src/components/portfolio-manager.tsx`
+
+**Edit:**
+- `src/routes/register.tsx` (extended fields + freelancer step)
+- `src/routes/_authenticated/onboarding.tsx` (merge into register, or keep as edit shortcut)
+- `src/routes/freelancers.tsx` (full rebuild with filters)
+- `src/routes/__root.tsx` (presence heartbeat)
+- `src/lib/categories.ts` (SKILL_CATALOG constant)
+
+## Scope / clarifications
+
+- Keeping current auth (email + password, auto-confirm enabled, Google OAuth) — no new verification code flow since you disabled confirmation. Want me to re-enable code verification?
+- Portfolio upload moved to profile page (post-signup) to keep registration fast. OK?
+- "Completed projects" = count of `projects` rows assigned to the freelancer with `status='completed'`. OK?

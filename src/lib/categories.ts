@@ -49,3 +49,33 @@ export const SPECIALIZATIONS = [
   "Project Manager",
   "Other",
 ] as const;
+
+/** Predefined skill catalog used as fallback before DB loads. */
+export const SKILL_CATALOG = [
+  "Web Development",
+  "Frontend Development",
+  "Backend Development",
+  "Full Stack Development",
+  "UI/UX Design",
+  "Graphic Design",
+  "Mobile App Development",
+  "Python",
+  "JavaScript",
+  "React",
+  "Vue.js",
+  "FastAPI",
+  "AI Development",
+  "Copywriting",
+  "Translation",
+  "Video Editing",
+  "3D Modeling",
+  "Game Development",
+  "Marketing",
+  "SEO",
+] as const;
+
+export const AVAILABILITY_OPTIONS = [
+  { value: "available", label: "Available" },
+  { value: "busy", label: "Busy" },
+  { value: "not_available", label: "Not available" },
+] as const;
