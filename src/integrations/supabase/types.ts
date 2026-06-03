@@ -409,6 +409,30 @@ export type Database = {
         }
         Relationships: []
       }
+      streak_restorations: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          restored_date: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          restored_date: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          restored_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -460,16 +484,26 @@ export type Database = {
       get_my_chat_streaks: {
         Args: never
         Returns: {
+          can_restore: boolean
           chat_id: string
           streak: number
         }[]
       }
+      get_streak_restores_left: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      restore_streak: {
+        Args: { p_chat_id: string }
+        Returns: {
+          message: string
+          restores_left: number
+          success: boolean
+        }[]
       }
       update_presence: { Args: never; Returns: undefined }
     }
