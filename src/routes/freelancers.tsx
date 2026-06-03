@@ -2,6 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "@tanstack/react-router";
+import { openOrCreateChat } from "@/lib/open-chat";
+import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
 
 export const Route = createFileRoute("/freelancers")({
   head: () => ({ meta: [{ title: "Freelancers — WorkBridge" }] }),
@@ -10,6 +16,16 @@ export const Route = createFileRoute("/freelancers")({
 
 function Freelancers() {
   const [items, setItems] = useState<any[]>([]);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const message = async (otherId: string) => {
+    if (!user) { navigate({ to: "/login" }); return; }
+    if (user.id === otherId) { toast.info("This is your profile"); return; }
+    try {
+      const id = await openOrCreateChat(user.id, otherId);
+      if (id) navigate({ to: "/chats/$id", params: { id } });
+    } catch (e: any) { toast.error(e.message ?? "Failed to open chat"); }
+  };
   useEffect(() => {
     supabase.from("profiles").select("*").eq("kind", "freelancer").eq("onboarded", true)
       .order("created_at", { ascending: false }).limit(60)
@@ -43,6 +59,11 @@ function Freelancers() {
                     ))}
                   </div>
                 )}
+                <div className="mt-4">
+                  <Button size="sm" variant="outline" onClick={() => message(p.id)} disabled={user?.id === p.id}>
+                    <MessageSquare className="size-4" /> Message
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
