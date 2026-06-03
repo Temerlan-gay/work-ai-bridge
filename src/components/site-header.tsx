@@ -16,9 +16,9 @@ export function SiteHeader() {
           <span className="font-semibold tracking-tight">WorkBridge</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-          <Link to="/projects" className="hover:text-foreground transition">Projects</Link>
-          <Link to="/freelancers" className="hover:text-foreground transition">Freelancers</Link>
-          {user && <Link to="/chats" className="hover:text-foreground transition">Chats</Link>}
+          <Link to="/projects" className="px-3 py-1.5 rounded-md hover:text-foreground hover:shadow-md transition-all duration-200">Projects</Link>
+          <Link to="/freelancers" className="px-3 py-1.5 rounded-md hover:text-foreground hover:shadow-md transition-all duration-200">Freelancers</Link>
+          {user && <Link to="/chats" className="px-3 py-1.5 rounded-md hover:text-foreground hover:shadow-md transition-all duration-200">Chats</Link>}
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
