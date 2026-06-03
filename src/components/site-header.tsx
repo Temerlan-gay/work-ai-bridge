@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, LogOut, MessageSquare, Settings } from "lucide-react";
+import { WorkCoinBalance } from "@/components/workcoin-balance";
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
@@ -21,6 +22,7 @@ export function SiteHeader() {
           {user && <Link to="/chats" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Chats</Link>}
         </nav>
         <div className="flex items-center gap-2">
+          <WorkCoinBalance />
           <ThemeToggle />
           {user ? (
             <>
