@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Coins, Sparkles, Check } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Coins, Sparkles, Check, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
