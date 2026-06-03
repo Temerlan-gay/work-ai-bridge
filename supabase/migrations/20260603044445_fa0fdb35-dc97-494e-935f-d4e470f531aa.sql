@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "chat-images public read" ON storage.objects;
