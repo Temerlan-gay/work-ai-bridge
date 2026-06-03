@@ -29,6 +29,11 @@ function Onboarding() {
   const [kind, setKind] = useState<"freelancer" | "client">("freelancer");
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
+  const [username, setUsername] = useState("");
+  const [yearsExp, setYearsExp] = useState<string>("");
+  const [availability, setAvailability] = useState<string>("available");
+  const [hourlyRate, setHourlyRate] = useState<string>("");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [country, setCountry] = useState<string>("Russia");
   const [city, setCity] = useState("");
   const [age, setAge] = useState<string>("");
@@ -59,12 +64,18 @@ function Onboarding() {
     const { error } = await supabase.from("profiles").update({
       full_name: fullName,
       nickname: nickname || null,
+      username: username ? username.toLowerCase().trim() : null,
       kind,
       country,
       city,
       age: age ? Number(age) : null,
       specialization,
-      skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
+      skills: selectedSkills.length
+        ? selectedSkills
+        : skills.split(",").map((s) => s.trim()).filter(Boolean),
+      years_experience: yearsExp ? Number(yearsExp) : null,
+      availability,
+      hourly_rate: hourlyRate ? Number(hourlyRate) : null,
       bio,
       links: { github, linkedin },
       onboarded: true,
