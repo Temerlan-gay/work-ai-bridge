@@ -50,7 +50,7 @@ function Landing() {
 
         {/* Motivation */}
         <section className="mx-auto max-w-6xl px-4 pb-16">
-          <MotivationBanner variant="work" />
+          <MotivationBanner />
         </section>
 
         {/* Categories */}
@@ -83,7 +83,7 @@ function Landing() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-24">
-          <MotivationBanner variant="climb" />
+          <MotivationBanner />
         </section>
       </main>
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
