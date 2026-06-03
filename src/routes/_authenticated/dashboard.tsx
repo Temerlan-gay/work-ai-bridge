@@ -58,7 +58,7 @@ function Dashboard() {
           <StatCard label="Average rating" value={`${stats.avg.toFixed(1)} ★`} />
         </div>
 
-        <MotivationBanner variant="climb" />
+        <MotivationBanner />
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
