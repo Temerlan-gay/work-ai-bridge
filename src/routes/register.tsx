@@ -65,7 +65,11 @@ function RegisterPage() {
         },
       });
       if (error) {
-        toast.error(error.message);
+        if (error.status === 422 && (error as any).code === "user_already_exists") {
+          toast.error("Аккаунт с таким email уже зарегистрирован");
+        } else {
+          toast.error(error.message);
+        }
         return;
       }
       if (avatarFile) {
