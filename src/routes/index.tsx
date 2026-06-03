@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
 import { ArrowRight, Shield, Sparkles, Star } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { MotivationBanner, MotivationStrip } from "@/components/motivation";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,6 +43,14 @@ function Landing() {
               <Link to="/projects">Browse projects</Link>
             </Button>
           </div>
+          <div className="mt-10 max-w-2xl mx-auto">
+            <MotivationStrip />
+          </div>
+        </section>
+
+        {/* Motivation */}
+        <section className="mx-auto max-w-6xl px-4 pb-16">
+          <MotivationBanner variant="work" />
         </section>
 
         {/* Categories */}
@@ -71,6 +80,10 @@ function Landing() {
           <Feature icon={<Shield className="size-5" />} title="Secure payments" desc="Funds held in escrow until the work is approved." />
           <Feature icon={<Star className="size-5" />} title="Reputation that matters" desc="Verified reviews, completed-project counts, response times." />
           <Feature icon={<Sparkles className="size-5" />} title="AI project briefs" desc="Describe your idea and get a clear, detailed brief in seconds." />
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-24">
+          <MotivationBanner variant="climb" />
         </section>
       </main>
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
