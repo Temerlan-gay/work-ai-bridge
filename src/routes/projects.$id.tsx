@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { openOrCreateChat } from "@/lib/open-chat";
+import { MessageSquare } from "lucide-react";
 
 export const Route = createFileRoute("/projects/$id")({
   head: () => ({ meta: [{ title: "Project — WorkBridge" }] }),
@@ -37,6 +39,15 @@ function ProjectDetail() {
     else toast.success("Proposal sent");
   };
 
+  const messageClient = async () => {
+    if (!user) { navigate({ to: "/login" }); return; }
+    if (!project?.client_id || user.id === project.client_id) return;
+    try {
+      const chatId = await openOrCreateChat(user.id, project.client_id);
+      if (chatId) navigate({ to: "/chats/$id", params: { id: chatId } });
+    } catch (e: any) { toast.error(e.message ?? "Failed to open chat"); }
+  };
+
   if (!project) return <div className="min-h-screen bg-background"><SiteHeader /><div className="p-8 text-muted-foreground">Loading…</div></div>;
 
   return (
@@ -47,6 +58,12 @@ function ProjectDetail() {
         <h1 className="text-3xl font-semibold tracking-tight">{project.title}</h1>
         <div className="text-sm text-muted-foreground">Budget: <span className="text-foreground font-medium">${project.budget ?? 0}</span> · Deadline: {project.deadline ?? "—"}</div>
         <p className="whitespace-pre-wrap text-foreground/90">{project.description}</p>
+
+        {user && user.id !== project.client_id && (
+          <Button variant="outline" onClick={messageClient}>
+            <MessageSquare className="size-4" /> Message client
+          </Button>
+        )}
 
         {user && user.id !== project.client_id && project.status === "open" && (
           <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
