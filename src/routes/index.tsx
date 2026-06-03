@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
-import { ArrowRight, Shield, Star } from "lucide-react";
+import { ArrowRight, Shield, Sparkles, Star } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
 
 export const Route = createFileRoute("/")({
