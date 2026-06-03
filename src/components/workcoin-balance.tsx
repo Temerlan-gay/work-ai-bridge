@@ -49,7 +49,7 @@ export function WorkCoinBalance() {
 
   return (
     <Link
-      to="/settings"
+      to="/workcoins"
       title="WorkCoins"
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-secondary/50 text-sm font-medium transition-all duration-200 hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]"
     >
