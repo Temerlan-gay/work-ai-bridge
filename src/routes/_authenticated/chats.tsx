@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { MessageSquare } from "lucide-react";
+import { Flame, MessageSquare } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/chats")({
   component: ChatsLayout,
@@ -15,6 +15,7 @@ type ChatRow = {
   id: string;
   other: { id: string; full_name: string | null; avatar_url: string | null; nickname: string | null };
   last?: { body: string | null; image_url: string | null; created_at: string } | null;
+  streak?: number;
 };
 
 function ChatsLayout() {
@@ -40,6 +41,10 @@ function ChatsLayout() {
         .select("id, full_name, nickname, avatar_url")
         .in("id", otherIds);
       const pMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+      const { data: streaksData } = await supabase.rpc("get_my_chat_streaks");
+      const streakMap = new Map<string, number>(
+        (streaksData ?? []).map((s: { chat_id: string; streak: number }) => [s.chat_id, s.streak]),
+      );
       // last message per chat
       const rows: ChatRow[] = [];
       for (const c of chatsData) {
@@ -55,6 +60,7 @@ function ChatsLayout() {
           id: c.id,
           other: pMap.get(otherId) ?? { id: otherId, full_name: null, avatar_url: null, nickname: null },
           last,
+          streak: streakMap.get(c.id) ?? 0,
         });
       }
       if (!cancelled) { setChats(rows); setLoading(false); }
@@ -97,7 +103,18 @@ function ChatsLayout() {
                         <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-sm truncate">{name}</div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="font-medium text-sm truncate">{name}</div>
+                          {c.streak && c.streak > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-xs font-semibold text-orange-500 shrink-0"
+                              title={`Стрик: ${c.streak} ${c.streak === 1 ? "день" : "дн."} подряд оба писали`}
+                            >
+                              <Flame className="size-3.5 fill-orange-500/20" />
+                              {c.streak}
+                            </span>
+                          ) : null}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">{preview}</div>
                       </div>
                     </Link>
