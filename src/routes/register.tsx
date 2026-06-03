@@ -77,53 +77,16 @@ function RegisterPage() {
         };
         reader.readAsDataURL(avatarFile);
       }
-      setSent(true);
-      toast.success("Confirmation email sent");
+      navigate({ to: "/onboarding", replace: true });
     } finally {
       setLoading(false);
     }
-  };
-
-  const resend = async () => {
-    setResending(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
-    });
-    setResending(false);
-    if (error) toast.error(error.message);
-    else toast.success("Confirmation email re-sent");
   };
 
   const google = async () => {
     const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/onboarding" });
     if (res.error) toast.error(res.error.message);
   };
-
-  if (sent) {
-    return (
-      <div className="min-h-screen bg-background text-foreground">
-        <SiteHeader />
-        <main className="flex items-center justify-center px-4 py-16">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm text-center animate-fade-in">
-            <div className="mx-auto mb-4 size-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <MailCheck className="size-7 text-primary" />
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight mb-2">Check your inbox</h1>
-            <p className="text-sm text-muted-foreground mb-6">
-              We sent a confirmation link to <span className="text-foreground font-medium">{email}</span>.
-              Open it to activate your account — you'll be signed in automatically.
-            </p>
-            <Button onClick={resend} disabled={resending} variant="outline" className="w-full mb-3">
-              {resending ? "Sending…" : "Resend email"}
-            </Button>
-            <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">Back to log in</Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
