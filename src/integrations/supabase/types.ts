@@ -457,6 +457,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_my_chat_streaks: {
+        Args: never
+        Returns: {
+          chat_id: string
+          streak: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
