@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, MessageSquare } from "lucide-react";
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
@@ -18,11 +18,15 @@ export function SiteHeader() {
         <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
           <Link to="/projects" className="hover:text-foreground transition">Projects</Link>
           <Link to="/freelancers" className="hover:text-foreground transition">Freelancers</Link>
+          {user && <Link to="/chats" className="hover:text-foreground transition">Chats</Link>}
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           {user ? (
             <>
+              <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/chats" })} aria-label="Chats">
+                <MessageSquare className="size-4" />
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
                 <LayoutDashboard className="size-4" /> Dashboard
               </Button>
