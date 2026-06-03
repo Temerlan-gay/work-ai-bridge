@@ -49,7 +49,18 @@ function Freelancers() {
                   </div>
                   <div>
                     <div className="font-medium">{p.full_name}</div>
-                    <div className="text-xs text-muted-foreground">{p.specialization ?? "—"} · {p.country ?? ""}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      {(() => {
+                        const Icon = getSpecializationIcon(p.specialization);
+                        return (
+                          <>
+                            <Icon className="size-3" />
+                            <span>{p.specialization ?? "—"}</span>
+                          </>
+                        );
+                      })()}
+                      {p.country && <span>· {p.country}</span>}
+                    </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-3">{p.bio ?? "No bio yet."}</p>
