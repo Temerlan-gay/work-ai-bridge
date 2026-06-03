@@ -101,7 +101,8 @@ export const startSignup = createServerFn({ method: "POST" })
 
     if (existing) {
       if (existing.email_confirmed_at) {
-        throw new Error("An account with this email already exists. Please log in.");
+        // Do not disclose that the account exists — return uniform success.
+        return { ok: true };
       }
       // Re-use existing unconfirmed user: update password + metadata
       const { error: upErr } = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
