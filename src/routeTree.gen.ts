@@ -21,6 +21,7 @@ import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatsRouteImport } from './routes/_authenticated/chats'
+import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats.index'
 import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -82,6 +83,11 @@ const AuthenticatedChatsRoute = AuthenticatedChatsRouteImport.update({
   path: '/chats',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedChatsRoute,
+} as any)
 const AuthenticatedProjectsNewRoute =
   AuthenticatedProjectsNewRouteImport.update({
     id: '/projects/new',
@@ -97,11 +103,12 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/chats': typeof AuthenticatedChatsRoute
+  '/chats': typeof AuthenticatedChatsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/chats/': typeof AuthenticatedChatsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,11 +118,11 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/chats': typeof AuthenticatedChatsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/chats': typeof AuthenticatedChatsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -127,11 +134,12 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/chats': typeof AuthenticatedChatsRoute
+  '/_authenticated/chats': typeof AuthenticatedChatsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,6 +156,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/projects/$id'
     | '/projects/new'
+    | '/chats/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -157,11 +166,11 @@ export interface FileRouteTypes {
     | '/projects'
     | '/register'
     | '/reset-password'
-    | '/chats'
     | '/dashboard'
     | '/onboarding'
     | '/projects/$id'
     | '/projects/new'
+    | '/chats'
   id:
     | '__root__'
     | '/'
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/projects/$id'
     | '/_authenticated/projects/new'
+    | '/_authenticated/chats/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -276,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/chats/': {
+      id: '/_authenticated/chats/'
+      path: '/'
+      fullPath: '/chats/'
+      preLoaderRoute: typeof AuthenticatedChatsIndexRouteImport
+      parentRoute: typeof AuthenticatedChatsRoute
+    }
     '/_authenticated/projects/new': {
       id: '/_authenticated/projects/new'
       path: '/projects/new'
@@ -286,15 +303,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedChatsRouteChildren {
+  AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
+}
+
+const AuthenticatedChatsRouteChildren: AuthenticatedChatsRouteChildren = {
+  AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
+}
+
+const AuthenticatedChatsRouteWithChildren =
+  AuthenticatedChatsRoute._addFileChildren(AuthenticatedChatsRouteChildren)
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedChatsRoute: typeof AuthenticatedChatsRoute
+  AuthenticatedChatsRoute: typeof AuthenticatedChatsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProjectsNewRoute: typeof AuthenticatedProjectsNewRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedChatsRoute: AuthenticatedChatsRoute,
+  AuthenticatedChatsRoute: AuthenticatedChatsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProjectsNewRoute: AuthenticatedProjectsNewRoute,
