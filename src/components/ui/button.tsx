@@ -9,12 +9,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)]",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-[0_8px_24px_-8px_hsl(var(--destructive)/0.45)]",
+        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-[0_8px_24px_-8px_color-mix(in_oklab,var(--primary)_45%,transparent)]",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-[0_8px_24px_-8px_color-mix(in_oklab,var(--destructive)_45%,transparent)]",
       outline:
-        "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-[0_6px_20px_-8px_hsl(var(--foreground)/0.18)]",
-      secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-[0_6px_20px_-8px_hsl(var(--foreground)/0.18)]",
-      ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-[0_6px_20px_-8px_hsl(var(--foreground)/0.18)]",
+        "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]",
+      secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]",
+      ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]",
       link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
