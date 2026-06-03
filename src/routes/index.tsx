@@ -82,8 +82,12 @@ function Landing() {
 
 function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <div className="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-4">{icon}</div>
+    <div className="group rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/20">
+      <div className="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/15 group-hover:scale-110">
+        <span className="transition-all duration-300 group-hover:brightness-125">
+          {icon}
+        </span>
+      </div>
       <div className="font-medium mb-1">{title}</div>
       <div className="text-sm text-muted-foreground">{desc}</div>
     </div>
