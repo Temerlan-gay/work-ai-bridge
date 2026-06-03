@@ -68,11 +68,19 @@ function WorkCoinsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">WorkCoins</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Монеты за активность — обменивайте на плюшки внутри платформы.
-          </p>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center size-9 rounded-lg border border-border bg-background text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)] transition-all duration-200"
+          >
+            <ArrowLeft className="size-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">WorkCoins</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Монеты за активность — обменивайте на плюшки внутри платформы.
+            </p>
+          </div>
         </div>
         <Card className="px-5 py-3 flex items-center gap-3 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/20 border-amber-200/60 dark:border-amber-800/40">
           <Coins className="size-7 text-amber-500" />
