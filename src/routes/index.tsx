@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
 import { ArrowRight, Shield, Sparkles, Star } from "lucide-react";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,18 +48,21 @@ function Landing() {
         <section className="mx-auto max-w-6xl px-4 pb-20">
           <h2 className="text-2xl font-semibold tracking-tight mb-6">Explore by category</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {CATEGORIES.map((c) => (
-              <Link
-                key={c}
-                to="/projects"
-                className="rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:bg-accent/40 transition"
-              >
-                <div className="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-3">
-                  <Sparkles className="size-4" />
-                </div>
-                <div className="font-medium">{c}</div>
-              </Link>
-            ))}
+            {CATEGORIES.map((c) => {
+              const Icon = getCategoryIcon(c);
+              return (
+                <Link
+                  key={c}
+                  to="/projects"
+                  className="rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:bg-accent/40 transition"
+                >
+                  <div className="size-8 rounded-md bg-muted text-muted-foreground flex items-center justify-center mb-3">
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="font-medium">{c}</div>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
