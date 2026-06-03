@@ -41,13 +41,14 @@ function ProfilePage() {
         .select("*")
         .eq("username", username)
         .maybeSingle();
-      if (!data) { setNotFound(true); return; }
-      setP(data as FreelancerRow);
-      const { data: prof } = await supabase.from("profiles").select("links").eq("id", data.id).maybeSingle();
+      const row = data as FreelancerRow | null;
+      if (!row || !row.id) { setNotFound(true); return; }
+      setP(row);
+      const { data: prof } = await supabase.from("profiles").select("links").eq("id", row.id).maybeSingle();
       setLinks((prof?.links as any) ?? {});
       const [{ data: items }, { data: revs }] = await Promise.all([
-        supabase.from("portfolio_items").select("*").eq("user_id", data.id).order("created_at", { ascending: false }),
-        supabase.from("reviews").select("*").eq("to_user", data.id).order("created_at", { ascending: false }).limit(10),
+        supabase.from("portfolio_items").select("*").eq("user_id", row.id).order("created_at", { ascending: false }),
+        supabase.from("reviews").select("*").eq("to_user", row.id).order("created_at", { ascending: false }).limit(10),
       ]);
       setPortfolio((items ?? []) as Portfolio[]);
       setReviews((revs ?? []) as Review[]);
