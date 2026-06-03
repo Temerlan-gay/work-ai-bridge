@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Plus, Star } from "lucide-react";
+import { MotivationBanner } from "@/components/motivation";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — WorkBridge" }] }),
@@ -56,6 +57,8 @@ function Dashboard() {
           <StatCard label="Total earned" value={`$${stats.earned.toFixed(0)}`} />
           <StatCard label="Average rating" value={`${stats.avg.toFixed(1)} ★`} />
         </div>
+
+        <MotivationBanner variant="climb" />
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
