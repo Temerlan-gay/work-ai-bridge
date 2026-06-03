@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useState } from "react";
 import motivationWork from "@/assets/motivation-work.jpg";
 import motivationClimb from "@/assets/motivation-climb.jpg";
 import motivationRocket from "@/assets/motivation-rocket.jpg";
@@ -51,8 +51,6 @@ const STRIPS = [
   "Твой следующий уровень за одним сообщением",
 ] as const;
 
-// Per-mount unique picks. Each <MotivationBanner /> on the page gets a
-// different image + quote, and new picks come on every fresh page load.
 const pickedQuotes = new Set<number>();
 const pickedImages = new Set<number>();
 let pickedStrip = -1;
@@ -66,23 +64,26 @@ function uniquePick(used: Set<number>, total: number) {
 }
 
 export function MotivationBanner() {
-  // useMemo + ref so SSR + client agree per mount, but each instance is unique
-  const ref = useRef<{ q: string; img: string } | null>(null);
-  ref.current ||= {
-    q: MOTIVATIONS[uniquePick(pickedQuotes, MOTIVATIONS.length)],
-    img: IMAGES[uniquePick(pickedImages, IMAGES.length)],
-  };
-  const { q, img } = ref.current;
+  // Pick on client only — Math.random would cause SSR hydration mismatch.
+  const [pick, setPick] = useState<{ q: string; img: string } | null>(null);
+  useEffect(() => {
+    setPick({
+      q: MOTIVATIONS[uniquePick(pickedQuotes, MOTIVATIONS.length)],
+      img: IMAGES[uniquePick(pickedImages, IMAGES.length)],
+    });
+  }, []);
+  const q = pick?.q ?? "";
+  const img = pick?.img;
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
       <div className="grid md:grid-cols-2 gap-0 items-center">
         <div className="p-6 md:p-8">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Минутка мотивации</div>
-          <p className="text-xl md:text-2xl font-semibold leading-snug">{q}</p>
+          <p className="text-xl md:text-2xl font-semibold leading-snug min-h-[2em]">{q}</p>
           <p className="mt-3 text-sm text-muted-foreground">Открой проект, ответь клиенту, заверши задачу — и +50 WorkCoins твои.</p>
         </div>
-        <div className="relative h-48 md:h-56">
-          <img src={img} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+        <div className="relative h-48 md:h-56 bg-muted/40">
+          {img && <img src={img} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />}
         </div>
       </div>
     </div>
@@ -90,16 +91,16 @@ export function MotivationBanner() {
 }
 
 export function MotivationStrip() {
-  const ref = useRef<string | null>(null);
-  if (ref.current === null) {
+  const [text, setText] = useState<string>(STRIPS[0]);
+  useEffect(() => {
     let i = Math.floor(Math.random() * STRIPS.length);
     if (i === pickedStrip) i = (i + 1) % STRIPS.length;
     pickedStrip = i;
-    ref.current = STRIPS[i];
-  }
+    setText(STRIPS[i]);
+  }, []);
   return (
     <div className="rounded-xl border border-border bg-accent/30 px-4 py-3 text-sm text-center text-muted-foreground">
-      <span className="text-foreground font-medium">{ref.current}</span>
+      <span className="text-foreground font-medium">{text}</span>
     </div>
   );
 }
