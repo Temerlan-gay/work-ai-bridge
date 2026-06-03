@@ -16,6 +16,7 @@ import {
 import { COUNTRIES, SPECIALIZATIONS } from "@/lib/categories";
 import { toast } from "sonner";
 import { Briefcase, User } from "lucide-react";
+import { SkillMultiSelect } from "@/components/skill-multi-select";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Get started — WorkBridge" }] }),
@@ -129,6 +130,29 @@ function Onboarding() {
                   <Input value={nickname} onChange={(e) => setNickname(e.target.value)} />
                 </div>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Username (unique)</Label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                    placeholder="johndoe"
+                    minLength={3}
+                    maxLength={30}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Availability</Label>
+                  <Select value={availability} onValueChange={setAvailability}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="busy">Busy</SelectItem>
+                      <SelectItem value="not_available">Not available</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label>Country</Label>
@@ -173,10 +197,30 @@ function Onboarding() {
                   />
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Skills (comma-separated)</Label>
-                <Input placeholder="React, TypeScript, Figma" value={skills} onChange={(e) => setSkills(e.target.value)} />
-              </div>
+              {kind === "freelancer" && (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Years of experience</Label>
+                      <Input type="number" min={0} max={60} value={yearsExp} onChange={(e) => setYearsExp(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Hourly rate (USD)</Label>
+                      <Input type="number" min={0} value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Skills & expertise</Label>
+                    <SkillMultiSelect value={selectedSkills} onChange={setSelectedSkills} max={15} />
+                  </div>
+                </>
+              )}
+              {kind === "client" && (
+                <div className="space-y-1.5">
+                  <Label>Skills you usually look for (optional)</Label>
+                  <Input placeholder="React, Figma" value={skills} onChange={(e) => setSkills(e.target.value)} />
+                </div>
+              )}
             </div>
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
