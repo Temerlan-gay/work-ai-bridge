@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, LogOut, MessageSquare } from "lucide-react";
+import { LayoutDashboard, LogOut, MessageSquare, Settings } from "lucide-react";
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
@@ -26,6 +26,9 @@ export function SiteHeader() {
             <>
               <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/chats" })} aria-label="Chats">
                 <MessageSquare className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/settings" })} aria-label="Settings">
+                <Settings className="size-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
                 <LayoutDashboard className="size-4" /> Dashboard
