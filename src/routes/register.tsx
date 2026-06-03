@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { Camera, MailCheck } from "lucide-react";
+import { Camera } from "lucide-react";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up — WorkBridge" }] }),
@@ -22,13 +22,11 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [resending, setResending] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!user || !user.email_confirmed_at) return;
+    if (!user) return;
     (async () => {
       const pending = sessionStorage.getItem("pendingAvatar");
       if (pending) {
