@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
 import { getSpecializationIcon } from "@/lib/category-icons";
 
 export const Route = createFileRoute("/freelancers")({
