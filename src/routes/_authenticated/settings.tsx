@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SiteHeader } from "@/components/site-header";
+import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,6 +152,7 @@ function SettingsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
+      <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Настройки</h1>

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
+import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -69,6 +70,7 @@ function ProfilePage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
+        <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
         <div className="mx-auto max-w-2xl px-4 py-20 text-center">
           <h1 className="text-2xl font-semibold">Profile not found</h1>
           <p className="text-sm text-muted-foreground mt-2">@{username} doesn't exist.</p>
@@ -88,6 +90,7 @@ function ProfilePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
+      <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-6">

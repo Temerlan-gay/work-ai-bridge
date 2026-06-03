@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
+import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
@@ -95,6 +96,7 @@ function RegisterPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
+      <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Create an account</h1>
