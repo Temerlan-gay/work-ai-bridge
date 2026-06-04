@@ -149,6 +149,7 @@ export type Database = {
       }
       portfolio_items: {
         Row: {
+          boosted_at: string | null
           created_at: string
           description: string | null
           id: string
@@ -159,6 +160,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          boosted_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -169,6 +171,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          boosted_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -255,6 +258,7 @@ export type Database = {
       projects: {
         Row: {
           attachments: string[] | null
+          boosted_at: string | null
           budget: number | null
           category: string
           client_id: string
@@ -270,6 +274,7 @@ export type Database = {
         }
         Insert: {
           attachments?: string[] | null
+          boosted_at?: string | null
           budget?: number | null
           category: string
           client_id: string
@@ -285,6 +290,7 @@ export type Database = {
         }
         Update: {
           attachments?: string[] | null
+          boosted_at?: string | null
           budget?: number | null
           category?: string
           client_id?: string
@@ -537,6 +543,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      boost_item: {
+        Args: { p_id: string; p_kind: string }
+        Returns: {
+          balance: number
+          message: string
+          success: boolean
+        }[]
       }
       get_my_chat_streaks: {
         Args: never
