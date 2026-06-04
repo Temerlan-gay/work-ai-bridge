@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
+import { BoostButton } from "@/components/boost-button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,10 @@ function ProjectDetail() {
     } catch (e: any) { toast.error(e.message ?? "Failed to open chat"); }
   };
 
+  const reload = () => {
+    supabase.from("projects").select("*").eq("id", id).maybeSingle().then(({ data }) => setProject(data));
+  };
+
   if (!project) return <div className="min-h-screen bg-background"><SiteHeader /><div className="p-8 text-muted-foreground">Loading…</div></div>;
 
   return (
@@ -65,6 +70,15 @@ function ProjectDetail() {
           <Button variant="outline" onClick={messageClient}>
             <MessageSquare className="size-4" /> Message client
           </Button>
+        )}
+
+        {user && user.id === project.client_id && (
+          <div className="flex items-center gap-3">
+            <BoostButton kind="project" id={project.id} boostedAt={project.boosted_at} onBoosted={reload} />
+            {project.boosted_at && Date.now() - new Date(project.boosted_at).getTime() < 7*24*60*60*1000 && (
+              <span className="text-xs text-muted-foreground">В топе с {new Date(project.boosted_at).toLocaleDateString()}</span>
+            )}
+          </div>
         )}
 
         {user && user.id !== project.client_id && project.status === "open" && (

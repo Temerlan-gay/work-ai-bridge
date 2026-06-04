@@ -11,6 +11,7 @@ import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
 import { isOnline, type FreelancerRow } from "@/components/freelancer-card";
 import { Star, Briefcase, MapPin, Clock, MessageSquare, Github, Linkedin, ExternalLink } from "lucide-react";
+import { BoostButton } from "@/components/boost-button";
 
 export const Route = createFileRoute("/freelancers/$username")({
   head: ({ params }) => ({
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/freelancers/$username")({
   component: ProfilePage,
 });
 
-type Portfolio = { id: string; title: string; description: string | null; image_url: string | null; link: string | null; technologies: string[] | null };
+type Portfolio = { id: string; title: string; description: string | null; image_url: string | null; link: string | null; technologies: string[] | null; boosted_at: string | null };
 type Review = { id: string; rating: number; comment: string | null; created_at: string; from_user: string };
 
 function ProfilePage() {
@@ -48,13 +49,23 @@ function ProfilePage() {
       const { data: prof } = await supabase.from("profiles").select("links").eq("id", row.id).maybeSingle();
       setLinks((prof?.links as any) ?? {});
       const [{ data: items }, { data: revs }] = await Promise.all([
-        supabase.from("portfolio_items").select("*").eq("user_id", row.id).order("created_at", { ascending: false }),
+        supabase.from("portfolio_items").select("*").eq("user_id", row.id)
+          .order("boosted_at", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false }),
         supabase.from("reviews").select("*").eq("to_user", row.id).order("created_at", { ascending: false }).limit(10),
       ]);
       setPortfolio((items ?? []) as Portfolio[]);
       setReviews((revs ?? []) as Review[]);
     })();
   }, [username]);
+
+  const reloadPortfolio = async () => {
+    if (!p) return;
+    const { data: items } = await supabase.from("portfolio_items").select("*").eq("user_id", p.id)
+      .order("boosted_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
+    setPortfolio((items ?? []) as Portfolio[]);
+  };
 
   const message = async () => {
     if (!p) return;
@@ -175,7 +186,12 @@ function ProfilePage() {
                     <img src={it.image_url} alt={it.title} className="w-full aspect-video object-cover" loading="lazy" />
                   )}
                   <div className="p-4">
-                    <div className="font-medium">{it.title}</div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium">{it.title}</div>
+                      {it.boosted_at && Date.now() - new Date(it.boosted_at).getTime() < 7*24*60*60*1000 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-medium shrink-0">★ TOP</span>
+                      )}
+                    </div>
                     {it.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{it.description}</p>}
                     {it.technologies && it.technologies.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
@@ -188,6 +204,11 @@ function ProfilePage() {
                       <a href={it.link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">
                         Visit <ExternalLink className="size-3" />
                       </a>
+                    )}
+                    {user?.id === p.id && (
+                      <div className="mt-3">
+                        <BoostButton kind="portfolio" id={it.id} boostedAt={it.boosted_at} onBoosted={reloadPortfolio} />
+                      </div>
                     )}
                   </div>
                 </div>

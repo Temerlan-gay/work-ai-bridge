@@ -25,7 +25,12 @@ function ProjectsBrowse() {
 
   useEffect(() => {
     (async () => {
-      let query = supabase.from("projects").select("*").eq("status", "open").order("created_at", { ascending: false });
+      let query = supabase
+        .from("projects")
+        .select("*")
+        .eq("status", "open")
+        .order("boosted_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
       if (cat && cat !== "all") query = query.eq("category", cat);
       const { data } = await query;
       setItems(data ?? []);
@@ -60,7 +65,12 @@ function ProjectsBrowse() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((p) => (
               <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="rounded-xl border border-border bg-card p-5 hover:border-primary/40 transition">
-                <div className="text-xs text-muted-foreground mb-2">{p.category}</div>
+                <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                  <span>{p.category}</span>
+                  {p.boosted_at && Date.now() - new Date(p.boosted_at).getTime() < 7*24*60*60*1000 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-medium">★ TOP</span>
+                  )}
+                </div>
                 <div className="font-medium mb-1 line-clamp-2">{p.title}</div>
                 <div className="text-sm text-muted-foreground line-clamp-3">{p.description}</div>
                 <div className="mt-3 text-sm font-medium text-primary">${p.budget ?? 0}</div>
