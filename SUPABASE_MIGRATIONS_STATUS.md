@@ -1,12 +1,14 @@
 # Supabase migrations status
 
-Project ref: `wtrhupgspcrsuzrkepth`
+Project ref: `sqvnckkatskkyngbanlh`
 
 This repo has SQL migrations in `supabase/migrations/`. They need to be applied to the Supabase project before the deployed app can read or write its required tables.
 
 ## Current check
 
-On 2026-06-08, local public REST checks against the configured Supabase project returned `404 Not Found` for these expected tables:
+On 2026-06-08, Supabase CLI was linked to the configured project and all local migrations were pushed to the remote database.
+
+REST checks against the configured Supabase project returned `200 OK` for these expected tables:
 
 ```text
 profiles
@@ -16,11 +18,11 @@ email_verification_codes
 workcoin_wallets
 ```
 
-That means the target Supabase database likely does not have the migrations applied yet.
+That means the target Supabase database has the required tables.
 
 ## Automated commands
 
-Run these from the project root after logging in to Supabase:
+Run these from the project root after logging in to Supabase when new migrations are added:
 
 ```bash
 npx supabase login
@@ -33,14 +35,14 @@ The scripts use the project ref from `supabase/config.toml`.
 
 ## Current blocker
 
-The local machine is not logged in to Supabase CLI. `npx supabase link --project-ref wtrhupgspcrsuzrkepth` fails with:
+The local machine is logged in to Supabase CLI and is linked to the project ref `sqvnckkatskkyngbanlh`.
 
 ```text
-Access token not provided. Supply an access token by running `supabase login` or setting the SUPABASE_ACCESS_TOKEN environment variable.
+Project linked successfully.
 ```
 
-No Supabase access token or database password is currently available in the local ignored env files.
+If `db push` asks for the database password, get it from Supabase Project Settings -> Database.
 
 ## Manual alternative
 
-Open Supabase Dashboard -> SQL Editor for project `wtrhupgspcrsuzrkepth`, then run every SQL file in `supabase/migrations/` in filename order.
+Open Supabase Dashboard -> SQL Editor for project `sqvnckkatskkyngbanlh`, then run every SQL file in `supabase/migrations/` in filename order.

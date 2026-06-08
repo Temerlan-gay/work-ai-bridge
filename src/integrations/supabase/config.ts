@@ -1,4 +1,4 @@
-export const EXPECTED_SUPABASE_PROJECT_ID = "wtrhupgspcrsuzrkepth";
+export const EXPECTED_SUPABASE_PROJECT_ID = "sqvnckkatskkyngbanlh";
 export const EXPECTED_SUPABASE_URL = `https://${EXPECTED_SUPABASE_PROJECT_ID}.supabase.co`;
 
 export function getSupabaseProjectId(url: string): string | undefined {

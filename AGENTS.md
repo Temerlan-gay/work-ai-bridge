@@ -34,7 +34,7 @@ This repository uses TanStack Start with Nitro server rendering and deploys on V
 - `SUPABASE_PUBLISHABLE_KEY` is the client-safe anon/public key.
 - `VITE_SUPABASE_URL` and `VITE_SUPABASE_PROJECT_ID` are used in frontend client config.
 - `SUPABASE_SERVICE_ROLE_KEY` is required only for server-side admin operations in `src/integrations/supabase/client.server.ts` and should stay server-only.
-- The current local Supabase project ref is `wtrhupgspcrsuzrkepth`.
+- The current local Supabase project ref is `sqvnckkatskkyngbanlh`.
 
 ## AI and Gemini rules
 
@@ -45,7 +45,7 @@ This repository uses TanStack Start with Nitro server rendering and deploys on V
 ## Migration and schema checks
 
 - This repo includes Supabase migrations in `supabase/migrations/` and `supabase/config.toml`.
-- The project ref from `supabase/config.toml` is `wtrhupgspcrsuzrkepth`.
+- The project ref from `supabase/config.toml` is `sqvnckkatskkyngbanlh`.
 - Apply migrations before deployment if the target Supabase database does not have the required tables.
 - If Supabase returns a missing table error, run migrations manually in the Supabase SQL editor or use the Supabase CLI with the correct project ref.
 

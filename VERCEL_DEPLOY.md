@@ -12,11 +12,11 @@
 Add these variables in Vercel Project Settings -> Environment Variables for Production, Preview, and Development:
 
 ```text
-SUPABASE_URL=https://wtrhupgspcrsuzrkepth.supabase.co
+SUPABASE_URL=https://sqvnckkatskkyngbanlh.supabase.co
 SUPABASE_PUBLISHABLE_KEY=<anon key>
 SUPABASE_SERVICE_ROLE_KEY=<service role key>
-VITE_SUPABASE_PROJECT_ID=wtrhupgspcrsuzrkepth
-VITE_SUPABASE_URL=https://wtrhupgspcrsuzrkepth.supabase.co
+VITE_SUPABASE_PROJECT_ID=sqvnckkatskkyngbanlh
+VITE_SUPABASE_URL=https://sqvnckkatskkyngbanlh.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<anon key>
 NITRO_PRESET=vercel
 ```
@@ -42,7 +42,7 @@ Migrations are SQL files that create or update database tables, policies, and fu
 The Supabase project ref is the part before `.supabase.co` in the project URL. For this project it is:
 
 ```text
-wtrhupgspcrsuzrkepth
+sqvnckkatskkyngbanlh
 ```
 
 Before redeploying, make sure the migrations have been applied to the target Supabase project. If the Supabase CLI is configured, run:
@@ -69,7 +69,7 @@ Google login uses Supabase Auth OAuth directly. To enable it:
 2. Add this authorized redirect URI:
 
 ```text
-https://wtrhupgspcrsuzrkepth.supabase.co/auth/v1/callback
+https://sqvnckkatskkyngbanlh.supabase.co/auth/v1/callback
 ```
 
 3. In Supabase Dashboard -> Authentication -> Providers -> Google, enable Google and paste the Google Client ID and Client Secret.
@@ -92,7 +92,7 @@ After changing auth provider or URL settings, test email signup and Google login
 
 ## Troubleshooting auth project mismatch
 
-If the browser console shows Supabase auth requests going to a project URL other than `https://wtrhupgspcrsuzrkepth.supabase.co`, update both local env files and Vercel env vars.
+If the browser console shows Supabase auth requests going to a project URL other than `https://sqvnckkatskkyngbanlh.supabase.co`, update both local env files and Vercel env vars.
 
 For local development, remember that `.env.local` overrides `.env` during Vite builds.
 
