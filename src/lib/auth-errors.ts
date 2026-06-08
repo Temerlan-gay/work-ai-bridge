@@ -20,5 +20,9 @@ export function getFriendlyAuthError(error: AuthLikeError): string {
     return "An account with this email already exists. Log in or reset the password.";
   }
 
+  if (lower.includes("missing oauth secret") || lower.includes("unsupported provider")) {
+    return "Google login is not configured in Supabase yet. Enable the Google provider and add its Client ID and Client Secret in Supabase Auth settings.";
+  }
+
   return message;
 }
