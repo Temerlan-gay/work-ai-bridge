@@ -61,3 +61,20 @@ If the CLI is not logged in or you do not have the database password, open Supab
 - Rotate the service-role key in Supabase if it has been shared outside Vercel/local secret storage.
 - After adding or changing Vercel environment variables, redeploy the project.
 - `VERCEL_ENV_IMPORT.local.env` and `VERCEL_ENV_VALUES.local.md` are local handoff files only and must stay ignored by Git.
+
+## Troubleshooting auth project mismatch
+
+If the browser console shows Supabase auth requests going to a project URL other than `https://wtrhupgspcrsuzrkepth.supabase.co`, update both local env files and Vercel env vars.
+
+For local development, remember that `.env.local` overrides `.env` during Vite builds.
+
+For Vercel, update these variables and redeploy so the browser bundle is rebuilt:
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+VITE_SUPABASE_PROJECT_ID
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
+```
