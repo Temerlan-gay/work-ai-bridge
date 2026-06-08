@@ -61,6 +61,27 @@ CLI requirements:
 - If the CLI asks for the database password, get it from Supabase Project Settings -> Database.
 - Do not commit Supabase access tokens, database passwords, or service-role keys.
 
+## Google login
+
+Google login uses Supabase Auth OAuth directly. To enable it:
+
+1. In Google Cloud Console, create an OAuth client for a Web application.
+2. Add this authorized redirect URI:
+
+```text
+https://wtrhupgspcrsuzrkepth.supabase.co/auth/v1/callback
+```
+
+3. In Supabase Dashboard -> Authentication -> Providers -> Google, enable Google and paste the Google Client ID and Client Secret.
+4. In Supabase Dashboard -> Authentication -> URL Configuration, set the production Site URL and add redirect URLs for every app URL that should work:
+
+```text
+http://localhost:5173/**
+https://YOUR_VERCEL_DOMAIN/**
+```
+
+After changing auth provider or URL settings, test email signup and Google login again from the deployed domain.
+
 ## Important
 
 - Never add `SUPABASE_SERVICE_ROLE_KEY` with a `VITE_` prefix.

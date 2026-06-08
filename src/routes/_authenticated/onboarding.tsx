@@ -48,13 +48,18 @@ function Onboarding() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (data?.onboarded) navigate({ to: "/dashboard", replace: true });
-      if (data) {
-        setFullName(data.full_name ?? "");
-        setNickname(data.nickname ?? "");
-      }
-    });
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.onboarded) navigate({ to: "/dashboard", replace: true });
+        if (data) {
+          setFullName(data.full_name ?? "");
+          setNickname(data.nickname ?? "");
+        }
+      });
   }, [user, navigate]);
 
   const save = async () => {
@@ -62,30 +67,43 @@ function Onboarding() {
     setSaving(true);
     const specialization =
       specializationChoice === "Other" ? specializationOther.trim() : specializationChoice;
-    const { error } = await supabase.from("profiles").update({
-      full_name: fullName,
-      nickname: nickname || null,
-      username: username ? username.toLowerCase().trim() : null,
-      kind,
-      country,
-      city,
-      age: age ? Number(age) : null,
-      specialization,
-      skills: selectedSkills.length
-        ? selectedSkills
-        : skills.split(",").map((s) => s.trim()).filter(Boolean),
-      years_experience: yearsExp ? Number(yearsExp) : null,
-      availability,
-      hourly_rate: hourlyRate ? Number(hourlyRate) : null,
-      bio,
-      links: { github, linkedin },
-      onboarded: true,
-    }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        full_name: fullName,
+        nickname: nickname || null,
+        username: username ? username.toLowerCase().trim() : null,
+        kind,
+        country,
+        city,
+        age: age ? Number(age) : null,
+        specialization,
+        skills: selectedSkills.length
+          ? selectedSkills
+          : skills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+        years_experience: yearsExp ? Number(yearsExp) : null,
+        availability,
+        hourly_rate: hourlyRate ? Number(hourlyRate) : null,
+        bio,
+        links: { github, linkedin },
+        onboarded: true,
+      },
+      { onConflict: "id" },
+    );
     // also seed user_roles
-    await supabase.from("user_roles").insert({ user_id: user.id, role: kind }).then(() => {});
+    await supabase
+      .from("user_roles")
+      .insert({ user_id: user.id, role: kind })
+      .then(() => {});
     setSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success("Welcome to WorkBridge!"); navigate({ to: "/dashboard" }); }
+    else {
+      toast.success("Welcome to WorkBridge!");
+      navigate({ to: "/dashboard" });
+    }
   };
 
   return (
@@ -97,14 +115,24 @@ function Onboarding() {
         {step === 1 && (
           <>
             <h1 className="text-2xl font-semibold tracking-tight mb-1">I want to…</h1>
-            <p className="text-sm text-muted-foreground mb-6">Choose how you'll use WorkBridge. You can change this later.</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Choose how you'll use WorkBridge. You can change this later.
+            </p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <button onClick={() => setKind("freelancer")} className={`text-left rounded-xl border p-5 transition ${kind === "freelancer" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}>
+              <button
+                onClick={() => setKind("freelancer")}
+                className={`text-left rounded-xl border p-5 transition ${kind === "freelancer" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
+              >
                 <Briefcase className="size-5 mb-3 text-primary" />
                 <div className="font-medium">Work as a freelancer</div>
-                <div className="text-sm text-muted-foreground">Find projects and build a reputation.</div>
+                <div className="text-sm text-muted-foreground">
+                  Find projects and build a reputation.
+                </div>
               </button>
-              <button onClick={() => setKind("client")} className={`text-left rounded-xl border p-5 transition ${kind === "client" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}>
+              <button
+                onClick={() => setKind("client")}
+                className={`text-left rounded-xl border p-5 transition ${kind === "client" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
+              >
                 <User className="size-5 mb-3 text-primary" />
                 <div className="font-medium">Hire freelancers</div>
                 <div className="text-sm text-muted-foreground">Post projects and find talent.</div>
@@ -135,7 +163,9 @@ function Onboarding() {
                   <Label>Username (unique)</Label>
                   <Input
                     value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                    onChange={(e) =>
+                      setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
+                    }
                     placeholder="johndoe"
                     minLength={3}
                     maxLength={30}
@@ -144,7 +174,9 @@ function Onboarding() {
                 <div className="space-y-1.5">
                   <Label>Availability</Label>
                   <Select value={availability} onValueChange={setAvailability}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="available">Available</SelectItem>
                       <SelectItem value="busy">Busy</SelectItem>
@@ -162,7 +194,9 @@ function Onboarding() {
                     </SelectTrigger>
                     <SelectContent>
                       {COUNTRIES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -173,7 +207,13 @@ function Onboarding() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Age</Label>
-                  <Input type="number" min={14} max={120} value={age} onChange={(e) => setAge(e.target.value)} />
+                  <Input
+                    type="number"
+                    min={14}
+                    max={120}
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -184,7 +224,9 @@ function Onboarding() {
                   </SelectTrigger>
                   <SelectContent>
                     {SPECIALIZATIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -202,28 +244,49 @@ function Onboarding() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Years of experience</Label>
-                      <Input type="number" min={0} max={60} value={yearsExp} onChange={(e) => setYearsExp(e.target.value)} />
+                      <Input
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={yearsExp}
+                        onChange={(e) => setYearsExp(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Hourly rate (USD)</Label>
-                      <Input type="number" min={0} value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
+                      <Input
+                        type="number"
+                        min={0}
+                        value={hourlyRate}
+                        onChange={(e) => setHourlyRate(e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Skills & expertise</Label>
-                    <SkillMultiSelect value={selectedSkills} onChange={setSelectedSkills} max={15} />
+                    <SkillMultiSelect
+                      value={selectedSkills}
+                      onChange={setSelectedSkills}
+                      max={15}
+                    />
                   </div>
                 </>
               )}
               {kind === "client" && (
                 <div className="space-y-1.5">
                   <Label>Skills you usually look for (optional)</Label>
-                  <Input placeholder="React, Figma" value={skills} onChange={(e) => setSkills(e.target.value)} />
+                  <Input
+                    placeholder="React, Figma"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                  />
                 </div>
               )}
             </div>
             <div className="mt-8 flex justify-between">
-              <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+              <Button variant="ghost" onClick={() => setStep(1)}>
+                Back
+              </Button>
               <Button onClick={() => setStep(3)}>Next</Button>
             </div>
           </>
@@ -240,17 +303,29 @@ function Onboarding() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>GitHub</Label>
-                  <Input placeholder="username" value={github} onChange={(e) => setGithub(e.target.value)} />
+                  <Input
+                    placeholder="username"
+                    value={github}
+                    onChange={(e) => setGithub(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>LinkedIn</Label>
-                  <Input placeholder="url" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
+                  <Input
+                    placeholder="url"
+                    value={linkedin}
+                    onChange={(e) => setLinkedin(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
             <div className="mt-8 flex justify-between">
-              <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
-              <Button onClick={save} disabled={saving}>{saving ? "Saving..." : "Save & continue"}</Button>
+              <Button variant="ghost" onClick={() => setStep(2)}>
+                Back
+              </Button>
+              <Button onClick={save} disabled={saving}>
+                {saving ? "Saving..." : "Save & continue"}
+              </Button>
             </div>
           </>
         )}

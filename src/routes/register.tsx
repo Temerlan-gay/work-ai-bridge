@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/site-header";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
+import { signInWithGoogle } from "@/lib/supabase-oauth";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
@@ -25,6 +25,7 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -65,7 +66,7 @@ function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -86,17 +87,23 @@ function RegisterPage() {
         };
         reader.readAsDataURL(avatarFile);
       }
-      navigate({ to: "/onboarding", replace: true });
+      if (data.session) {
+        navigate({ to: "/onboarding", replace: true });
+        return;
+      }
+
+      toast.success("Account created. Check your email to confirm it, then log in.");
+      navigate({ to: "/login", replace: true });
     } finally {
       setLoading(false);
     }
   };
 
   const google = async () => {
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/onboarding",
-    });
-    if (res.error) toast.error(res.error.message);
+    setGoogleLoading(true);
+    const { error } = await signInWithGoogle("/onboarding");
+    setGoogleLoading(false);
+    if (error) toast.error(getFriendlyAuthError(error));
   };
 
   return (
@@ -111,8 +118,13 @@ function RegisterPage() {
           <p className="text-sm text-muted-foreground mb-6">
             Join WorkBridge as a freelancer or a client
           </p>
-          <Button variant="outline" className="w-full mb-4" onClick={google}>
-            Continue with Google
+          <Button
+            variant="outline"
+            className="w-full mb-4"
+            onClick={google}
+            disabled={googleLoading}
+          >
+            {googleLoading ? "Redirecting..." : "Continue with Google"}
           </Button>
           <div className="flex items-center gap-3 my-4 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />

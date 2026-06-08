@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
+import { signInWithGoogle } from "@/lib/supabase-oauth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Log in — WorkBridge" }] }),
@@ -22,6 +22,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (user) navigate({ to: "/dashboard", replace: true });
@@ -37,10 +38,10 @@ function LoginPage() {
   };
 
   const google = async () => {
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
-    });
-    if (res.error) toast.error(res.error.message);
+    setGoogleLoading(true);
+    const { error } = await signInWithGoogle("/dashboard");
+    setGoogleLoading(false);
+    if (error) toast.error(getFriendlyAuthError(error));
   };
 
   return (
@@ -53,8 +54,13 @@ function LoginPage() {
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Welcome back</h1>
           <p className="text-sm text-muted-foreground mb-6">Log in to your WorkBridge account</p>
-          <Button variant="outline" className="w-full mb-4" onClick={google}>
-            Continue with Google
+          <Button
+            variant="outline"
+            className="w-full mb-4"
+            onClick={google}
+            disabled={googleLoading}
+          >
+            {googleLoading ? "Redirecting..." : "Continue with Google"}
           </Button>
           <div className="flex items-center gap-3 my-4 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
