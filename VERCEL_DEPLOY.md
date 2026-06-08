@@ -68,6 +68,8 @@ If the browser console shows Supabase auth requests going to a project URL other
 
 For local development, remember that `.env.local` overrides `.env` during Vite builds.
 
+The app validates the Supabase project ref at runtime. If Vercel still has stale values, it will fail loudly with a project mismatch message instead of silently talking to the wrong Supabase project.
+
 For Vercel, update these variables and redeploy so the browser bundle is rebuilt:
 
 ```text
