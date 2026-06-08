@@ -48,11 +48,18 @@ wtrhupgspcrsuzrkepth
 Before redeploying, make sure the migrations have been applied to the target Supabase project. If the Supabase CLI is configured, run:
 
 ```text
-supabase link --project-ref wtrhupgspcrsuzrkepth
-supabase db push
+npm run db:link
+npm run db:push:dry
+npm run db:push
 ```
 
 If the CLI is not logged in or you do not have the database password, open Supabase SQL Editor for the same project and run the migration SQL files in timestamp order.
+
+CLI requirements:
+
+- `npx supabase login` or `SUPABASE_ACCESS_TOKEN` must be available before `npm run db:link`.
+- If the CLI asks for the database password, get it from Supabase Project Settings -> Database.
+- Do not commit Supabase access tokens, database passwords, or service-role keys.
 
 ## Important
 
