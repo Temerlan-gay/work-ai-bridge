@@ -1,171 +1,261 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { SiteHeader } from "@/components/site-header";
+import { useState } from "react";
+import { Bot, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+
 import { BackButton } from "@/components/back-button";
+import { SiteHeader } from "@/components/site-header";
+import { AiSuggestionReview } from "@/components/ai-suggestion-review";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { X, Upload } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CATEGORIES } from "@/lib/categories";
+import { aiGenerateProjectDraft, aiPriceEstimator, aiScamDetection } from "@/lib/ai/functions";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/projects/new")({
-  head: () => ({ meta: [{ title: "About me — WorkBridge" }] }),
-  component: AboutMe,
+  head: () => ({ meta: [{ title: "New project - WorkBridge" }] }),
+  component: NewProject,
 });
 
-type WorkItem = { id?: string; url: string; path: string; title: string; description: string };
-
-function AboutMe() {
+function NewProject() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [headline, setHeadline] = useState("");
-  const [bio, setBio] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(CATEGORIES[0] ?? "AI Development");
   const [skills, setSkills] = useState("");
+  const [budget, setBudget] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [brief, setBrief] = useState("");
   const [saving, setSaving] = useState(false);
-  const [works, setWorks] = useState<WorkItem[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [suggestion, setSuggestion] = useState<Record<string, string | number | string[]> | null>(null);
+  const [estimate, setEstimate] = useState<any>(null);
+  const [risk, setRisk] = useState<any>(null);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("specialization, bio, skills").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (data) {
-        setHeadline(data.specialization ?? "");
-        setBio(data.bio ?? "");
-        setSkills((data.skills ?? []).join(", "));
-      }
-    });
-  }, [user]);
+  const original = {
+    title,
+    description,
+    skills,
+    budget,
+    deadline,
+  };
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files || !user) return;
-    setUploading(true);
-    const uploaded: WorkItem[] = [];
-    for (const file of Array.from(files)) {
-      const path = `${user.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("portfolio").upload(path, file);
-      if (error) { toast.error(error.message); continue; }
-      const { data } = supabase.storage.from("portfolio").getPublicUrl(path);
-      uploaded.push({ url: data.publicUrl, path, title: "", description: "" });
+  const generateDraft = async () => {
+    const prompt = brief.trim() || description.trim();
+    if (prompt.length < 10) {
+      toast.error("Describe the project idea first");
+      return;
     }
-    setWorks((prev) => [...prev, ...uploaded]);
-    setUploading(false);
-    if (fileRef.current) fileRef.current.value = "";
+    setAiLoading(true);
+    try {
+      const draft = await aiGenerateProjectDraft({ data: { brief: prompt, category } });
+      setSuggestion({
+        title: draft.title,
+        description: [
+          draft.description,
+          draft.requirements.length ? `\nRequirements:\n- ${draft.requirements.join("\n- ")}` : "",
+          draft.timeline ? `\nTimeline: ${draft.timeline}` : "",
+        ].join("").trim(),
+        skills: draft.skills,
+        budget: `${draft.budgetEstimate.min}-${draft.budgetEstimate.max}`,
+        deadline,
+      });
+    } catch (e: any) {
+      toast.error(e.message ?? "AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
-  const removeWork = async (idx: number) => {
-    const w = works[idx];
-    await supabase.storage.from("portfolio").remove([w.path]);
-    setWorks((prev) => prev.filter((_, i) => i !== idx));
+  const estimatePrice = async () => {
+    setEstimateLoading(true);
+    try {
+      const result = await aiPriceEstimator({
+        data: {
+          project: { title, description, category, skills, budget, deadline },
+        },
+      });
+      setEstimate(result);
+    } catch (e: any) {
+      toast.error(e.message ?? "AI estimate failed");
+    } finally {
+      setEstimateLoading(false);
+    }
   };
 
-  const updateWork = (idx: number, patch: Partial<WorkItem>) => {
-    setWorks((prev) => prev.map((w, i) => (i === idx ? { ...w, ...patch } : w)));
+  const checkRisk = async () => {
+    setRiskLoading(true);
+    try {
+      const result = await aiScamDetection({
+        data: {
+          contentType: "project",
+          content: { title, description, category, skills, budget, deadline },
+        },
+      });
+      setRisk(result);
+    } catch (e: any) {
+      toast.error(e.message ?? "AI risk check failed");
+    } finally {
+      setRiskLoading(false);
+    }
+  };
+
+  const applySuggestion = (next: Record<string, unknown>) => {
+    setTitle(String(next.title ?? ""));
+    setDescription(String(next.description ?? ""));
+    setSkills(Array.isArray(next.skills) ? next.skills.join(", ") : String(next.skills ?? ""));
+    setBudget(String(next.budget ?? ""));
+    setDeadline(String(next.deadline ?? ""));
+    setSuggestion(null);
+    toast.success("AI suggestion inserted into the form. Review it before saving.");
   };
 
   const submit = async () => {
     if (!user) return;
-    setSaving(true);
-    const { error: profileErr } = await supabase.from("profiles").update({
-      specialization: headline || null,
-      bio: bio || null,
-      skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
-    }).eq("id", user.id);
-
-    let portfolioErr: { message: string } | null = null;
-    if (works.length > 0) {
-      const rows = works.map((w) => ({
-        user_id: user.id,
-        title: w.title || "Untitled work",
-        description: w.description || null,
-        image_url: w.url,
-      }));
-      const { error } = await supabase.from("portfolio_items").insert(rows);
-      if (error) portfolioErr = error;
+    if (!title.trim() || !description.trim()) {
+      toast.error("Title and description are required");
+      return;
     }
+    setSaving(true);
+    const parsedBudget = budget.includes("-")
+      ? Number(budget.split("-").at(-1)?.trim())
+      : Number(budget);
+    const { error } = await supabase.from("projects").insert({
+      client_id: user.id,
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      skills_required: skills.split(",").map((s) => s.trim()).filter(Boolean),
+      budget: Number.isFinite(parsedBudget) ? parsedBudget : null,
+      deadline: deadline || null,
+    });
     setSaving(false);
-    if (profileErr) { toast.error(profileErr.message); return; }
-    if (portfolioErr) { toast.error(portfolioErr.message); return; }
-    toast.success("Profile saved");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Project created");
     navigate({ to: "/dashboard" });
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
-      <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
-      <main className="mx-auto max-w-2xl px-4 py-8 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">About me</h1>
-          <p className="text-sm text-muted-foreground mt-1">Tell people who you are, what you do, and showcase your work.</p>
-        </div>
-        <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
+      <div className="mx-auto max-w-6xl px-4 pt-4">
+        <BackButton />
+      </div>
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_320px]">
+        <section className="space-y-5 rounded-lg border border-border bg-card p-6">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">New project</h1>
+            <p className="text-sm text-muted-foreground">AI can draft and estimate, but you choose what gets saved.</p>
+          </div>
+
           <div className="space-y-1.5">
-            <Label>Headline</Label>
-            <Input placeholder="e.g. Fullstack Developer · React, Node.js" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+            <Label>Quick brief for AI</Label>
+            <Textarea rows={3} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Need a React developer for an e-commerce website..." />
           </div>
-          <div className="space-y-1.5">
-            <Label>About you</Label>
-            <Textarea rows={6} placeholder="Describe yourself, your experience and qualities" value={bio} onChange={(e) => setBio(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Skills (comma-separated)</Label>
-            <Input placeholder="React, TypeScript, Figma" value={skills} onChange={(e) => setSkills(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Photos of your work</Label>
-            <div className="flex items-center gap-3">
-              <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                <Upload className="size-4 mr-2" />{uploading ? "Uploading..." : "Upload images"}
-              </Button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => onFiles(e.target.files)}
-              />
-            </div>
-            {works.length > 0 && (
-              <div className="grid sm:grid-cols-2 gap-3 pt-2">
-                {works.map((w, idx) => (
-                  <div key={w.path} className="relative rounded-lg overflow-hidden border border-border bg-background">
-                    <div className="relative aspect-video">
-                      <img src={w.url} alt={w.title || "work"} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeWork(idx)}
-                        className="absolute top-1 right-1 rounded-full bg-background/90 p-1 hover:bg-background"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </div>
-                    <div className="p-2 space-y-2">
-                      <Input
-                        placeholder="Title"
-                        value={w.title}
-                        onChange={(e) => updateWork(idx, { title: e.target.value })}
-                      />
-                      <Textarea
-                        rows={2}
-                        placeholder="Short description (optional)"
-                        value={w.description}
-                        onChange={(e) => updateWork(idx, { description: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <Button onClick={submit} disabled={saving || (!headline && !bio && works.length === 0)}>
-            {saving ? "Saving..." : "Save profile"}
+          <Button variant="outline" onClick={generateDraft} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+            Generate draft
           </Button>
-        </div>
+
+          {suggestion && (
+            <AiSuggestionReview
+              feature="project_generator"
+              targetTable="projects"
+              original={original}
+              suggested={suggestion}
+              onAccept={applySuggestion}
+              onReject={() => setSuggestion(null)}
+            />
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Description</Label>
+              <Textarea rows={8} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Skills</Label>
+              <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, TypeScript" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Budget ($)</Label>
+              <Input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="500 or 400-800" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Deadline</Label>
+              <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={submit} disabled={saving}>{saving ? "Saving..." : "Create project"}</Button>
+          </div>
+        </section>
+
+        <aside className="space-y-4">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2 font-medium">
+              <Bot className="size-4 text-primary" /> AI controls
+            </div>
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full justify-start" onClick={estimatePrice} disabled={estimateLoading}>
+                {estimateLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                Estimate price
+              </Button>
+              <Button variant="outline" className="w-full justify-start" onClick={checkRisk} disabled={riskLoading}>
+                {riskLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                Check for scams
+              </Button>
+            </div>
+          </div>
+
+          {estimate && (
+            <div className="rounded-lg border border-border bg-card p-4 text-sm">
+              <div className="font-medium">Price estimate</div>
+              <div className="mt-2 text-2xl font-semibold">${estimate.minBudget}-{estimate.maxBudget}</div>
+              <div className="text-muted-foreground">{estimate.minDays}-{estimate.maxDays} days · {estimate.complexity}</div>
+              <p className="mt-2 text-muted-foreground">{estimate.reasoning}</p>
+            </div>
+          )}
+
+          {risk && (
+            <div className="rounded-lg border border-border bg-card p-4 text-sm">
+              <div className="font-medium">Risk check: {risk.risk}</div>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-muted-foreground">
+                {(risk.warnings ?? []).map((warning: string) => <li key={warning}>{warning}</li>)}
+              </ul>
+            </div>
+          )}
+        </aside>
       </main>
     </div>
   );

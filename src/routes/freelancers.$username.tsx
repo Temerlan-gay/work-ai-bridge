@@ -10,8 +10,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
 import { isOnline, type FreelancerRow } from "@/components/freelancer-card";
-import { Star, Briefcase, MapPin, Clock, MessageSquare, Github, Linkedin, ExternalLink } from "lucide-react";
+import { Star, Briefcase, MapPin, Clock, MessageSquare, Github, Linkedin, ExternalLink, Bot, Loader2 } from "lucide-react";
 import { BoostButton } from "@/components/boost-button";
+import { aiReputationScore } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/freelancers/$username")({
   head: ({ params }) => ({
@@ -34,6 +35,8 @@ function ProfilePage() {
   const [portfolio, setPortfolio] = useState<Portfolio[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [links, setLinks] = useState<Record<string, string>>({});
+  const [trustLoading, setTrustLoading] = useState(false);
+  const [trustScore, setTrustScore] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -75,6 +78,25 @@ function ProfilePage() {
       const id = await openOrCreateChat(user.id, p.id);
       if (id) navigate({ to: "/chats/$id", params: { id } });
     } catch (e: any) { toast.error(e.message ?? "Failed"); }
+  };
+
+  const loadTrustScore = async () => {
+    if (!p) return;
+    setTrustLoading(true);
+    try {
+      const result = await aiReputationScore({
+        data: {
+          profile: p as any,
+          reviews: reviews as any[],
+          projects: [],
+        },
+      });
+      setTrustScore(result);
+    } catch (e: any) {
+      toast.error(e.message ?? "AI reputation scoring failed");
+    } finally {
+      setTrustLoading(false);
+    }
   };
 
   if (notFound) {
@@ -174,6 +196,35 @@ function ProfilePage() {
               </div>
             </div>
           )}
+
+          <div className="mt-6 rounded-lg border border-border bg-background p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-semibold">
+                  <Bot className="size-4 text-primary" /> AI trust score
+                </h2>
+                <p className="text-xs text-muted-foreground">Based on reviews, completion, activity, and visible profile signals.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={loadTrustScore} disabled={trustLoading}>
+                {trustLoading ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
+                Analyze
+              </Button>
+            </div>
+            {trustScore && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-[100px_1fr]">
+                <div className="rounded-md bg-primary/10 p-3 text-center">
+                  <div className="text-2xl font-semibold">{trustScore.score}</div>
+                  <div className="text-xs text-muted-foreground">{trustScore.grade}</div>
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium">Reasons</div>
+                  <ul className="mt-1 list-disc pl-4 text-muted-foreground">
+                    {(trustScore.reasons ?? []).map((reason: string) => <li key={reason}>{reason}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {portfolio.length > 0 && (

@@ -5,9 +5,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ImagePlus, Send, ArrowLeft, Loader2 } from "lucide-react";
+import { ImagePlus, Send, ArrowLeft, Loader2, Bot, Languages, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { aiChatAssistant } from "@/lib/ai/functions";
+import { AiSuggestionReview } from "@/components/ai-suggestion-review";
 
 export const Route = createFileRoute("/_authenticated/chats/$id")({
   component: ChatRoom,
@@ -33,6 +35,9 @@ function ChatRoom() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPanel, setAiPanel] = useState<any>(null);
+  const [composerSuggestion, setComposerSuggestion] = useState<Record<string, string> | null>(null);
   const [otherOnline, setOtherOnline] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -157,6 +162,27 @@ function ChatRoom() {
 
   const otherName = other?.full_name || other?.nickname || "User";
 
+  const runChatAi = async (mode: "reply" | "translate" | "summarize" | "grammar") => {
+    setAiLoading(true);
+    try {
+      const result = await aiChatAssistant({
+        data: {
+          mode,
+          draft: text,
+          messages: messages
+            .filter((m) => m.body)
+            .slice(-40)
+            .map((m) => ({ mine: m.sender_id === user?.id, body: m.body ?? "" })),
+        },
+      });
+      setAiPanel({ mode, result });
+    } catch (e: any) {
+      toast.error(e.message ?? "AI chat assistant failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <>
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border">
@@ -182,6 +208,69 @@ function ChatRoom() {
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Bot className="size-4 text-primary" /> AI chat assistant
+            </div>
+            {aiLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => runChatAi("reply")} disabled={aiLoading}>
+              <Wand2 className="size-4" /> Replies
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => runChatAi("grammar")} disabled={aiLoading || !text.trim()}>
+              Improve grammar
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => runChatAi("translate")} disabled={aiLoading}>
+              <Languages className="size-4" /> Translate
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => runChatAi("summarize")} disabled={aiLoading}>
+              Summarize
+            </Button>
+          </div>
+          {aiPanel && (
+            <div className="mt-3 space-y-2 text-sm">
+              {aiPanel.result.summary && <p className="rounded-md bg-muted p-2">{aiPanel.result.summary}</p>}
+              {aiPanel.result.translation && <p className="rounded-md bg-muted p-2">{aiPanel.result.translation}</p>}
+              {aiPanel.result.improved && (
+                <button
+                  type="button"
+                  className="block w-full rounded-md bg-muted p-2 text-left hover:bg-muted/80"
+                  onClick={() => setComposerSuggestion({ message: aiPanel.result.improved })}
+                >
+                  {aiPanel.result.improved}
+                </button>
+              )}
+              {(aiPanel.result.suggestions ?? []).map((s: string) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="block w-full rounded-md bg-muted p-2 text-left hover:bg-muted/80"
+                  onClick={() => setComposerSuggestion({ message: s })}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          {composerSuggestion && (
+            <div className="mt-3">
+              <AiSuggestionReview
+                feature="chat_assistant"
+                targetTable="messages"
+                targetId={chatId}
+                original={{ message: text }}
+                suggested={composerSuggestion}
+                onAccept={(next) => {
+                  setText(String(next.message ?? ""));
+                  setComposerSuggestion(null);
+                }}
+                onReject={() => setComposerSuggestion(null)}
+              />
+            </div>
+          )}
+        </div>
         {messages.map((m) => {
           const mine = m.sender_id === user?.id;
           return (

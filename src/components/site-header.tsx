@@ -21,11 +21,19 @@ export function SiteHeader() {
           <Link to="/freelancers" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Freelancers</Link>
           {user && <Link to="/chats" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Chats</Link>}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <WorkCoinBalance />
           <ThemeToggle />
           {user ? (
             <>
+              {user.email && (
+                <span
+                  className="max-w-[9rem] truncate text-xs text-muted-foreground sm:max-w-[14rem]"
+                  title={user.email}
+                >
+                  {user.email}
+                </span>
+              )}
               <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/chats" })} aria-label="Chats">
                 <MessageSquare className="size-4" />
               </Button>

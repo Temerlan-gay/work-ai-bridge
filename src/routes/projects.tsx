@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Bot, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectTrigger,
@@ -12,6 +14,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/categories";
+import { useAuth } from "@/hooks/use-auth";
+import { aiNaturalLanguageSearch, aiProjectFeed } from "@/lib/ai/functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({ meta: [{ title: "Projects — WorkBridge" }] }),
@@ -19,9 +24,14 @@ export const Route = createFileRoute("/projects")({
 });
 
 function ProjectsBrowse() {
+  const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("");
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [aiOrder, setAiOrder] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -37,7 +47,58 @@ function ProjectsBrowse() {
     })();
   }, [cat]);
 
-  const filtered = items.filter((p) => !q || p.title.toLowerCase().includes(q.toLowerCase()));
+  const filtered = items
+    .filter((p) => !q || `${p.title} ${p.description} ${(p.skills_required ?? []).join(" ")}`.toLowerCase().includes(q.toLowerCase()))
+    .sort((a, b) => (aiOrder[b.id] ?? 0) - (aiOrder[a.id] ?? 0));
+
+  const aiSearch = async () => {
+    if (aiQuery.trim().length < 2) return;
+    setAiLoading(true);
+    try {
+      const parsed = await aiNaturalLanguageSearch({ data: { query: aiQuery, mode: "projects" } });
+      setQ(parsed.query ?? aiQuery);
+      if (parsed.category) setCat(parsed.category);
+      toast.success("AI converted your search into filters");
+    } catch (e: any) {
+      toast.error(e.message ?? "AI search failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const personalizeFeed = async () => {
+    if (!user) {
+      toast.info("Log in to personalize your project feed");
+      return;
+    }
+    setFeedLoading(true);
+    try {
+      const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      const result = await aiProjectFeed({
+        data: {
+          profile: profile ?? {},
+          projects: items.map((p) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            category: p.category,
+            skills_required: p.skills_required,
+            budget: p.budget,
+            created_at: p.created_at,
+          })),
+          behavior: {},
+        },
+      });
+      const next: Record<string, number> = {};
+      for (const row of result.rankings ?? []) next[row.id] = row.score;
+      setAiOrder(next);
+      toast.success("AI personalized your feed");
+    } catch (e: any) {
+      toast.error(e.message ?? "AI feed failed");
+    } finally {
+      setFeedLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -45,6 +106,26 @@ function ProjectsBrowse() {
       <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="mx-auto max-w-6xl px-4 py-8">
         <h1 className="text-3xl font-semibold tracking-tight mb-6">Open projects</h1>
+        <div className="mb-4 rounded-lg border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <Bot className="size-4 text-primary" /> AI project discovery
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder="Need a React developer for an e-commerce website"
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+            />
+            <Button variant="outline" onClick={aiSearch} disabled={aiLoading}>
+              {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              AI search
+            </Button>
+            <Button variant="outline" onClick={personalizeFeed} disabled={feedLoading}>
+              {feedLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              For you
+            </Button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-3 mb-6">
           <Input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
           <Select value={cat} onValueChange={setCat}>

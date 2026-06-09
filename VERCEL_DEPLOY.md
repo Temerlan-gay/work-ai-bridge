@@ -21,12 +21,6 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<anon key>
 NITRO_PRESET=vercel
 ```
 
-If email OTP is used, also add:
-
-```text
-RESEND_API_KEY=<resend key>
-```
-
 If backend AI/Gemini features are added, also add:
 
 ```text
@@ -65,19 +59,23 @@ CLI requirements:
 
 Google login uses Supabase Auth OAuth directly. To enable it:
 
-1. In Google Cloud Console, create an OAuth client for a Web application.
-2. Add this authorized redirect URI:
+1. In Supabase Dashboard -> Authentication -> Providers -> Email, turn off Confirm email and save if signups should work without email confirmation.
+2. In Supabase Dashboard -> Authentication -> Providers -> Google, enable Google and copy the Supabase Callback URL.
+3. In Google Cloud Console, create an OAuth client for a Web application.
+4. Add the Supabase Callback URL as an Authorized redirect URI. For this Supabase project it should be:
 
 ```text
 https://sqvnckkatskkyngbanlh.supabase.co/auth/v1/callback
 ```
 
-3. In Supabase Dashboard -> Authentication -> Providers -> Google, enable Google and paste the Google Client ID and Client Secret.
-4. In Supabase Dashboard -> Authentication -> URL Configuration, set the production Site URL and add redirect URLs for every app URL that should work:
+5. Copy the Google Client ID and Client Secret into Supabase Dashboard -> Authentication -> Providers -> Google, then save.
+6. In Supabase Dashboard -> Authentication -> URL Configuration, set the production Site URL and add redirect URLs for every app URL that should work:
 
 ```text
 http://localhost:5173/**
+http://127.0.0.1:8080/**
 https://YOUR_VERCEL_DOMAIN/**
+https://YOUR_VERCEL_PREVIEW_DOMAIN/**
 ```
 
 After changing auth provider or URL settings, test email signup and Google login again from the deployed domain.

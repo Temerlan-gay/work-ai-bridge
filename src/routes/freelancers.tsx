@@ -17,6 +17,7 @@ import { SlidersHorizontal, Search, X } from "lucide-react";
 import { COUNTRIES } from "@/lib/categories";
 import { SkillMultiSelect } from "@/components/skill-multi-select";
 import { FreelancerCard, isOnline, type FreelancerRow } from "@/components/freelancer-card";
+import { aiFreelancerMatching } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/freelancers")({
   head: () => ({
@@ -71,6 +72,8 @@ function Freelancers() {
   const navigate = useNavigate();
   const [items, setItems] = useState<FreelancerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiMatching, setAiMatching] = useState(false);
+  const [aiOrder, setAiOrder] = useState<Record<string, number>>({});
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   useEffect(() => {
@@ -115,6 +118,8 @@ function Freelancers() {
       return true;
     });
     out.sort((a, b) => {
+      const aiScore = (aiOrder[b.id ?? ""] ?? 0) - (aiOrder[a.id ?? ""] ?? 0);
+      if (aiScore !== 0) return aiScore;
       switch (filters.sort) {
         case "rating": return (b.avg_rating ?? 0) - (a.avg_rating ?? 0);
         case "rate_low": return (a.hourly_rate ?? Infinity) - (b.hourly_rate ?? Infinity);
@@ -128,6 +133,40 @@ function Freelancers() {
   }, [items, filters]);
 
   const reset = () => setFilters(DEFAULT_FILTERS);
+  const aiMatch = async () => {
+    const prompt = filters.q.trim() || filters.skills.join(", ");
+    if (!prompt) {
+      toast.info("Enter a search or skills first");
+      return;
+    }
+    setAiMatching(true);
+    try {
+      const result = await aiFreelancerMatching({
+        data: {
+          project: { description: prompt, skills: filters.skills },
+          freelancers: items.map((p) => ({
+            id: p.id,
+            full_name: p.full_name,
+            skills: p.skills,
+            bio: p.bio,
+            specialization: p.specialization,
+            avg_rating: p.avg_rating,
+            completed_projects: p.completed_projects,
+            last_seen_at: p.last_seen_at,
+            hourly_rate: p.hourly_rate,
+          })),
+        },
+      });
+      const next: Record<string, number> = {};
+      for (const row of result.rankings ?? []) next[row.id] = row.score;
+      setAiOrder(next);
+      toast.success("AI ranked freelancers by relevance");
+    } catch (e: any) {
+      toast.error(e.message ?? "AI matching failed");
+    } finally {
+      setAiMatching(false);
+    }
+  };
   const activeCount =
     (filters.skills.length ? 1 : 0) +
     (filters.country !== "any" ? 1 : 0) +
@@ -270,6 +309,9 @@ function Freelancers() {
                 <SelectItem value="recent">Newest</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={aiMatch} disabled={aiMatching}>
+              {aiMatching ? "AI..." : "AI match"}
+            </Button>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="lg:hidden relative">

@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { Bot, Loader2, Sparkles } from "lucide-react";
+import { aiProfileAdvisor, aiResumeAssistant } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Настройки — WorkBridge" }] }),
@@ -31,6 +33,12 @@ function SettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [profileForAi, setProfileForAi] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<any>(null);
+  const [resumeText, setResumeText] = useState("");
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeAdvice, setResumeAdvice] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,7 +46,7 @@ function SettingsPage() {
     setCurrentEmail(user.email ?? "");
     supabase
       .from("profiles")
-      .select("nickname, username, avatar_url, full_name")
+      .select("*")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -48,6 +56,7 @@ function SettingsPage() {
         setInitialUsername(data?.username ?? "");
         setAvatarUrl(data?.avatar_url ?? null);
         setFullName(data?.full_name ?? "");
+        setProfileForAi(data ?? null);
       });
   }, [user]);
 
@@ -149,6 +158,41 @@ function SettingsPage() {
 
   const nickDirty = nickname !== initialNickname || username !== initialUsername;
 
+  const getProfileAdvice = async () => {
+    if (!profileForAi) return;
+    setAiLoading(true);
+    try {
+      const result = await aiProfileAdvisor({ data: { profile: profileForAi } });
+      setAiAdvice(result);
+    } catch (e: any) {
+      toast.error(e.message ?? "AI profile advisor failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const readResumeFile = async (file: File | undefined) => {
+    if (!file) return;
+    const text = await file.text();
+    setResumeText(text.slice(0, 12000));
+  };
+
+  const analyzeResume = async () => {
+    if (resumeText.trim().length < 20) {
+      toast.error("Paste resume text or choose a text resume file first");
+      return;
+    }
+    setResumeLoading(true);
+    try {
+      const result = await aiResumeAssistant({ data: { resumeText } });
+      setResumeAdvice(result);
+    } catch (e: any) {
+      toast.error(e.message ?? "AI resume assistant failed");
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -160,6 +204,53 @@ function SettingsPage() {
             Управляйте никнеймом и привязанной почтой.
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="size-4 text-primary" /> AI Profile Advisor
+            </CardTitle>
+            <CardDescription>
+              AI can suggest better positioning, skills, and portfolio improvements. It never saves changes automatically.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button variant="outline" onClick={getProfileAdvice} disabled={aiLoading || !profileForAi}>
+              {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              Analyze profile
+            </Button>
+            {aiAdvice && (
+              <div className="space-y-3 text-sm">
+                {aiAdvice.headline && (
+                  <div className="rounded-md border border-border p-3">
+                    <div className="text-xs font-medium text-muted-foreground">Suggested headline</div>
+                    <p className="mt-1">{aiAdvice.headline}</p>
+                  </div>
+                )}
+                {aiAdvice.betterBio && (
+                  <div className="rounded-md border border-border p-3">
+                    <div className="text-xs font-medium text-muted-foreground">Better bio</div>
+                    <p className="mt-1 whitespace-pre-wrap">{aiAdvice.betterBio}</p>
+                  </div>
+                )}
+                {aiAdvice.missingSkills?.length > 0 && (
+                  <div className="rounded-md border border-border p-3">
+                    <div className="text-xs font-medium text-muted-foreground">Missing skills</div>
+                    <p className="mt-1">{aiAdvice.missingSkills.join(", ")}</p>
+                  </div>
+                )}
+                {aiAdvice.portfolioImprovements?.length > 0 && (
+                  <div className="rounded-md border border-border p-3">
+                    <div className="text-xs font-medium text-muted-foreground">Portfolio improvements</div>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">
+                      {aiAdvice.portfolioImprovements.map((item: string) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -266,6 +357,55 @@ function SettingsPage() {
                 {savingEmail ? "Отправка..." : "Сменить email"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="size-4 text-primary" /> AI Resume Assistant
+            </CardTitle>
+            <CardDescription>
+              Analyze resume text for weaknesses and improvements. Files are not uploaded or overwritten.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              type="file"
+              accept=".txt,.md,.csv,.json"
+              onChange={(e) => readResumeFile(e.target.files?.[0])}
+            />
+            <Textarea
+              rows={6}
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              placeholder="Paste resume text here..."
+            />
+            <Button variant="outline" onClick={analyzeResume} disabled={resumeLoading}>
+              {resumeLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              Analyze resume
+            </Button>
+            {resumeAdvice && (
+              <div className="space-y-3 text-sm">
+                <div className="rounded-md border border-border p-3">
+                  <div className="text-xs font-medium text-muted-foreground">Weaknesses</div>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {(resumeAdvice.weaknesses ?? []).map((item: string) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-md border border-border p-3">
+                  <div className="text-xs font-medium text-muted-foreground">Suggested improvements</div>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {(resumeAdvice.improvements ?? []).map((item: string) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                {resumeAdvice.rewrittenSummary && (
+                  <div className="rounded-md border border-border p-3">
+                    <div className="text-xs font-medium text-muted-foreground">Rewritten summary</div>
+                    <p className="mt-1 whitespace-pre-wrap">{resumeAdvice.rewrittenSummary}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
