@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
 import { signInWithGoogle } from "@/lib/supabase-oauth";
@@ -32,22 +33,23 @@ function LoginPage() {
     event.preventDefault();
     setLoading(true);
 
-    try {
-      const cleanedEmail = email.trim().toLowerCase();
-      sessionStorage.setItem(
-        "pendingAuth",
-        JSON.stringify({
-          mode: "login",
-          email: cleanedEmail,
-          password,
-        }),
-      );
-      navigate({ to: "/verify-code", replace: true });
-    } catch (error: any) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    setLoading(false);
+    if (error) {
       toast.error(getFriendlyAuthError(error));
-    } finally {
-      setLoading(false);
+      return;
     }
+    if (!data.session) {
+      toast.error("Could not sign in. Check your details and try again.");
+      return;
+    }
+
+    toast.success("You are signed in");
+    navigate({ to: "/dashboard", replace: true });
   };
 
   const google = async () => {
@@ -66,9 +68,7 @@ function LoginPage() {
       <main className="flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            Enter your password, then confirm the code from your email
-          </p>
+          <p className="text-sm text-muted-foreground mb-6">Log in to your WorkBridge account</p>
 
           <Button
             variant="outline"
@@ -112,7 +112,7 @@ function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Opening..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 

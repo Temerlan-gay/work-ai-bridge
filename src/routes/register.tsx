@@ -64,36 +64,49 @@ function RegisterPage() {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  const saveAvatarForUpload = async () => {
+    if (!avatarFile) return;
+    const pendingAvatar = await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(avatarFile);
+    });
+    if (pendingAvatar) sessionStorage.setItem("pendingAvatar", pendingAvatar);
+  };
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
 
     try {
-      const cleanedEmail = email.trim().toLowerCase();
-      let pendingAvatar: string | null = null;
+      await saveAvatarForUpload();
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/onboarding`,
+        },
+      });
 
-      if (avatarFile) {
-        pendingAvatar = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(avatarFile);
-        });
+      if (error) {
+        toast.error(getFriendlyAuthError(error));
+        return;
       }
 
-      sessionStorage.setItem(
-        "pendingAuth",
-        JSON.stringify({
-          mode: "register",
-          email: cleanedEmail,
-          password,
-          fullName,
-          avatar: pendingAvatar,
-        }),
-      );
-      navigate({ to: "/verify-code", replace: true });
-    } catch (error: any) {
-      toast.error(getFriendlyAuthError(error));
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error("Sorry, this account is already registered. Try signing in.");
+        return;
+      }
+
+      if (data.session) {
+        navigate({ to: "/onboarding", replace: true });
+        return;
+      }
+
+      toast.success("Account created. Now you can sign in.");
+      navigate({ to: "/login", replace: true });
     } finally {
       setLoading(false);
     }
@@ -116,7 +129,7 @@ function RegisterPage() {
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Create an account</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Fill in your details, then confirm the code from your email
+            Join WorkBridge as a freelancer or a client
           </p>
 
           <Button
@@ -188,7 +201,7 @@ function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Opening..." : "Sign up"}
+              {loading ? "Creating..." : "Sign up"}
             </Button>
           </form>
 
