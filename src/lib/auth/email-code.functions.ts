@@ -1,15 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+
 import { assertExpectedSupabaseProject } from "@/integrations/supabase/config";
+import type { Database } from "@/integrations/supabase/types";
 
 const EmailSchema = z.object({
   email: z.string().email().max(320),
 });
 
 const VerifyEmailSchema = EmailSchema.extend({
-  code: z.string().regex(/^\d{6}$/),
+  code: z.string().regex(/^[1-9]{6}$/),
 });
 
 function normalizeEmail(email: string) {
@@ -42,7 +43,7 @@ async function sha256(value: string) {
 
 async function createCode() {
   const { randomInt } = await import("node:crypto");
-  return String(randomInt(100000, 1000000));
+  return Array.from({ length: 6 }, () => String(randomInt(1, 10))).join("");
 }
 
 async function sendEmail(to: string, code: string) {
@@ -61,16 +62,16 @@ async function sendEmail(to: string, code: string) {
     body: JSON.stringify({
       from,
       to,
-      subject: "Ваш код подтверждения WorkBridge",
+      subject: "Your WorkBridge confirmation code",
       html: `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#171717;">
-          <h1 style="font-size:22px;margin:0 0 12px;">Код подтверждения</h1>
-          <p style="font-size:14px;color:#525252;margin:0 0 20px;">Введите этот 6-значный код в WorkBridge, чтобы завершить регистрацию.</p>
+          <h1 style="font-size:22px;margin:0 0 12px;">Confirmation code</h1>
+          <p style="font-size:14px;color:#525252;margin:0 0 20px;">Enter this 6-digit code in WorkBridge to continue.</p>
           <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#f5f5f5;border-radius:12px;padding:18px 20px;text-align:center;">${code}</div>
-          <p style="font-size:12px;color:#737373;margin:20px 0 0;">Код действует 10 минут. Если вы не запрашивали регистрацию, просто проигнорируйте письмо.</p>
+          <p style="font-size:12px;color:#737373;margin:20px 0 0;">The code is valid for 10 minutes. If you did not request it, ignore this email.</p>
         </div>
       `,
-      text: `Ваш код подтверждения WorkBridge: ${code}. Код действует 10 минут.`,
+      text: `Your WorkBridge confirmation code: ${code}. The code is valid for 10 minutes.`,
     }),
   });
 
@@ -84,7 +85,6 @@ export const sendEmailVerificationCode = createServerFn({ method: "POST" })
   .inputValidator(EmailSchema)
   .handler(async ({ data }) => {
     const email = normalizeEmail(data.email);
-
     const supabase = createPublicServerSupabaseClient();
     const code = await createCode();
     const codeHash = await sha256(`${email}:${code}`);
@@ -108,10 +108,13 @@ export const verifyEmailCode = createServerFn({ method: "POST" })
     const supabase = createPublicServerSupabaseClient();
     const submittedHash = await sha256(`${email}:${data.code}`);
 
-    const { data: result, error } = await (supabase as any).rpc("verify_email_verification_code", {
-      p_email: email,
-      p_code_hash: submittedHash,
-    });
+    const { data: result, error } = await (supabase as any).rpc(
+      "verify_email_verification_code",
+      {
+        p_email: email,
+        p_code_hash: submittedHash,
+      },
+    );
 
     if (error) throw error;
     if (result === "ok") return { ok: true };

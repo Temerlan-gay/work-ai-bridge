@@ -157,7 +157,7 @@ function VerifyCodePage() {
           missing: "Request a confirmation code first.",
           expired: "The code has expired. Request a new code.",
           too_many_attempts: "Too many attempts. Request a new code.",
-          invalid: "The code is incorrect. Check the 6 digits and try again.",
+          invalid: "The code is incorrect. Check the 6 digits from 1 to 9 and try again.",
         };
         toast.error(messages[verification.reason]);
         return;
@@ -215,12 +215,12 @@ function VerifyCodePage() {
               <Input
                 id="code"
                 inputMode="numeric"
-                pattern="[0-9]{6}"
+                pattern="[1-9]{6}"
                 maxLength={6}
                 required
                 value={code}
                 onChange={(event) =>
-                  setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                  setCode(event.target.value.replace(/[^1-9]/g, "").slice(0, 6))
                 }
                 placeholder="123456"
               />
