@@ -1,21 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Camera } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { BackButton } from "@/components/back-button";
+import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SiteHeader } from "@/components/site-header";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  sendEmailVerificationCode,
-  verifyEmailCode,
-} from "@/lib/auth/email-code.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { sendEmailVerificationCode } from "@/lib/auth/email-code.functions";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
 import { signInWithGoogle } from "@/lib/supabase-oauth";
-import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Sign up - WorkBridge" }] }),
@@ -28,9 +25,6 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [codeSent, setCodeSent] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -71,90 +65,42 @@ function RegisterPage() {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const sendCode = async (targetEmail: string) => {
-    try {
-      await sendEmailVerificationCode({ data: { email: targetEmail } });
-      setVerifiedEmail(targetEmail);
-      setCodeSent(true);
-      setVerificationCode("");
-      toast.success("Мы отправили 6-значный код на вашу почту");
-    } catch (error: any) {
-      if (error.message?.includes("ACCOUNT_ALREADY_REGISTERED")) {
-        toast.error("Простите, но этот аккаунт уже зарегистрирован. Попробуйте войти.");
-      } else if (error.message?.includes("RESEND_API_KEY")) {
-        toast.error("Отправка писем еще не настроена. Добавьте RESEND_API_KEY.");
-      } else {
-        toast.error(error.message ?? "Не удалось отправить код подтверждения");
-      }
-    }
-  };
-
-  const createAccount = async (targetEmail: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: targetEmail,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/onboarding`,
-      },
-    });
-
-    if (error) {
-      toast.error(getFriendlyAuthError(error));
-      return;
-    }
-
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      toast.error("Простите, но этот аккаунт уже зарегистрирован. Попробуйте войти.");
-      return;
-    }
-
-    if (avatarFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          sessionStorage.setItem("pendingAvatar", reader.result);
-        }
-      };
-      reader.readAsDataURL(avatarFile);
-    }
-
-    if (data.session) {
-      navigate({ to: "/onboarding", replace: true });
-      return;
-    }
-
-    toast.success("Аккаунт создан. Теперь можно войти.");
-    navigate({ to: "/login", replace: true });
-  };
-
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
 
     try {
       const cleanedEmail = email.trim().toLowerCase();
-      if (!codeSent || verifiedEmail !== cleanedEmail) {
-        await sendCode(cleanedEmail);
-        return;
+      let pendingAvatar: string | null = null;
+
+      if (avatarFile) {
+        pendingAvatar = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(avatarFile);
+        });
       }
 
-      const verification = await verifyEmailCode({
-        data: { email: cleanedEmail, code: verificationCode },
-      });
-
-      if (!verification.ok) {
-        const messages = {
-          missing: "Сначала запросите код подтверждения.",
-          expired: "Код устарел. Запросите новый код.",
-          too_many_attempts: "Слишком много попыток. Запросите новый код.",
-          invalid: "Код неверный. Проверьте 6 цифр и попробуйте еще раз.",
-        };
-        toast.error(messages[verification.reason]);
-        return;
+      await sendEmailVerificationCode({ data: { email: cleanedEmail } });
+      sessionStorage.setItem(
+        "pendingAuth",
+        JSON.stringify({
+          mode: "register",
+          email: cleanedEmail,
+          password,
+          fullName,
+          avatar: pendingAvatar,
+        }),
+      );
+      toast.success("We sent a 6-digit code to your email");
+      navigate({ to: "/verify-code", replace: true });
+    } catch (error: any) {
+      if (error.message?.includes("RESEND_API_KEY")) {
+        toast.error("Email sending is not configured. Add RESEND_API_KEY.");
+      } else {
+        toast.error(getFriendlyAuthError(error));
       }
-
-      await createAccount(cleanedEmail);
     } finally {
       setLoading(false);
     }
@@ -177,7 +123,7 @@ function RegisterPage() {
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Create an account</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Join WorkBridge as a freelancer or a client
+            Fill in your details, then confirm the code from your email
           </p>
 
           <Button
@@ -221,7 +167,6 @@ function RegisterPage() {
                 id="fullName"
                 required
                 value={fullName}
-                disabled={codeSent}
                 onChange={(event) => setFullName(event.target.value)}
               />
             </div>
@@ -233,7 +178,6 @@ function RegisterPage() {
                 type="email"
                 required
                 value={email}
-                disabled={codeSent}
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
@@ -246,63 +190,19 @@ function RegisterPage() {
                 required
                 minLength={6}
                 value={password}
-                disabled={codeSent}
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
-            {codeSent && (
-              <div className="space-y-1.5">
-                <Label htmlFor="verificationCode">6-digit confirmation code</Label>
-                <Input
-                  id="verificationCode"
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  required
-                  value={verificationCode}
-                  onChange={(event) =>
-                    setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
-                  placeholder="123456"
-                />
-                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                  <span>Check your inbox for the code.</span>
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={() => {
-                      setCodeSent(false);
-                      setVerifiedEmail("");
-                    }}
-                  >
-                    Change email
-                  </button>
-                </div>
-              </div>
-            )}
-
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : codeSent ? "Confirm & create account" : "Send code"}
+              {loading ? "Sending code..." : "Sign up"}
             </Button>
-
-            {codeSent && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                disabled={loading}
-                onClick={() => sendCode(verifiedEmail)}
-              >
-                Send code again
-              </Button>
-            )}
           </form>
 
           <p className="mt-6 text-sm text-muted-foreground text-center">
             Already have an account?{" "}
             <Link to="/login" className="text-primary hover:underline">
-              Log in
+              Sign in
             </Link>
           </p>
         </div>
