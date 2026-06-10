@@ -9,15 +9,20 @@ export function getFriendlyAuthError(error: AuthLikeError): string {
   const lower = message.toLowerCase();
 
   if (code === "invalid_credentials" || lower.includes("invalid login credentials")) {
-    return "Email or password is incorrect. Check that this account belongs to the current Supabase project.";
+    return "Извините, но пароль не верный.";
   }
 
   if (code === "email_not_confirmed" || lower.includes("email not confirmed")) {
-    return "Please confirm your email before logging in. Check your inbox or sign up again to request a new link.";
+    return "Почта еще не подтверждена. Проверьте письмо или попробуйте зарегистрироваться заново.";
   }
 
-  if (code === "user_already_exists" || lower.includes("already registered")) {
-    return "An account with this email already exists. Log in or reset the password.";
+  if (
+    code === "user_already_exists" ||
+    lower.includes("already registered") ||
+    lower.includes("user already registered") ||
+    lower.includes("already exists")
+  ) {
+    return "Простите, но этот аккаунт уже зарегистрирован. Попробуйте войти.";
   }
 
   if (lower.includes("missing oauth secret") || lower.includes("unsupported provider")) {

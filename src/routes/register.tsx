@@ -66,8 +66,9 @@ function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const cleanedEmail = email.trim().toLowerCase();
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanedEmail,
         password,
         options: {
           data: { full_name: fullName },
@@ -76,6 +77,10 @@ function RegisterPage() {
       });
       if (error) {
         toast.error(getFriendlyAuthError(error));
+        return;
+      }
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error("Простите, но этот аккаунт уже зарегистрирован. Попробуйте войти.");
         return;
       }
       if (avatarFile) {
@@ -92,7 +97,7 @@ function RegisterPage() {
         return;
       }
 
-      toast.success("Account created. Check your email to confirm it, then log in.");
+      toast.success("Аккаунт создан. Теперь можно войти.");
       navigate({ to: "/login", replace: true });
     } finally {
       setLoading(false);

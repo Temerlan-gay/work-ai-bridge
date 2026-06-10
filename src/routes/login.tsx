@@ -31,10 +31,20 @@ function LoginPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
     setLoading(false);
-    if (error) toast.error(getFriendlyAuthError(error));
-    else navigate({ to: "/dashboard", replace: true });
+    if (error) {
+      toast.error(getFriendlyAuthError(error));
+      return;
+    }
+    if (!data.session) {
+      toast.error("Не удалось войти. Проверьте данные и попробуйте еще раз.");
+      return;
+    }
+    toast.success("Вы вошли в аккаунт");
   };
 
   const google = async () => {

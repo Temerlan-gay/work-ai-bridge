@@ -7,31 +7,62 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SkillMultiSelect } from "@/components/skill-multi-select";
+import { AVAILABILITY_OPTIONS, COUNTRIES, SPECIALIZATIONS } from "@/lib/categories";
 import { toast } from "sonner";
 import { Bot, Loader2, Sparkles } from "lucide-react";
 import { aiProfileAdvisor, aiResumeAssistant } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Настройки — WorkBridge" }] }),
+  head: () => ({ meta: [{ title: "Настройки - WorkBridge" }] }),
   component: SettingsPage,
 });
 
+type UserKind = "freelancer" | "client";
+type Links = { github?: string; linkedin?: string };
+
+function normalizeUsername(value: string) {
+  const cleaned = value.toLowerCase().trim().replace(/[^a-z0-9_-]/g, "");
+  return cleaned || null;
+}
+
 function SettingsPage() {
   const { user } = useAuth();
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [kind, setKind] = useState<UserKind>("freelancer");
+  const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
   const [username, setUsername] = useState("");
-  const [initialNickname, setInitialNickname] = useState("");
-  const [initialUsername, setInitialUsername] = useState("");
-  const [savingNick, setSavingNick] = useState(false);
+  const [country, setCountry] = useState("Russia");
+  const [city, setCity] = useState("");
+  const [age, setAge] = useState("");
+  const [specializationChoice, setSpecializationChoice] = useState("Fullstack Developer");
+  const [specializationOther, setSpecializationOther] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [yearsExp, setYearsExp] = useState("");
+  const [availability, setAvailability] = useState("available");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [bio, setBio] = useState("");
+  const [github, setGithub] = useState("");
+  const [linkedin, setLinkedin] = useState("");
 
   const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [fullName, setFullName] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profileForAi, setProfileForAi] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -43,22 +74,126 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!user) return;
+
     setCurrentEmail(user.email ?? "");
+    setLoadingProfile(true);
     supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        setLoadingProfile(false);
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+
+        const links = (data?.links ?? {}) as Links;
+        const specialization = data?.specialization ?? "Fullstack Developer";
+
+        setKind((data?.kind ?? "freelancer") as UserKind);
+        setFullName(data?.full_name ?? "");
         setNickname(data?.nickname ?? "");
         setUsername(data?.username ?? "");
-        setInitialNickname(data?.nickname ?? "");
-        setInitialUsername(data?.username ?? "");
+        setCountry(data?.country ?? "Russia");
+        setCity(data?.city ?? "");
+        setAge(data?.age ? String(data.age) : "");
+        setSpecializationChoice(
+          SPECIALIZATIONS.includes(specialization as any) ? specialization : "Other",
+        );
+        setSpecializationOther(
+          SPECIALIZATIONS.includes(specialization as any) ? "" : specialization,
+        );
+        setSelectedSkills(data?.skills ?? []);
+        setYearsExp(data?.years_experience ? String(data.years_experience) : "");
+        setAvailability(data?.availability ?? "available");
+        setHourlyRate(data?.hourly_rate ? String(data.hourly_rate) : "");
+        setBio(data?.bio ?? "");
+        setGithub(links.github ?? "");
+        setLinkedin(links.linkedin ?? "");
         setAvatarUrl(data?.avatar_url ?? null);
-        setFullName(data?.full_name ?? "");
         setProfileForAi(data ?? null);
       });
   }, [user]);
+
+  const currentProfilePayload = () => {
+    const cleanedUsername = normalizeUsername(username);
+    const specialization =
+      specializationChoice === "Other" ? specializationOther.trim() : specializationChoice;
+
+    return {
+      id: user!.id,
+      full_name: fullName.trim() || null,
+      nickname: nickname.trim() || null,
+      username: cleanedUsername,
+      kind,
+      country: country || null,
+      city: city.trim() || null,
+      age: age ? Number(age) : null,
+      specialization: specialization || null,
+      skills: selectedSkills,
+      years_experience: yearsExp ? Number(yearsExp) : null,
+      availability,
+      hourly_rate: hourlyRate ? Number(hourlyRate) : null,
+      bio: bio.trim() || null,
+      links: { github: github.trim(), linkedin: linkedin.trim() },
+      onboarded: true,
+    };
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+
+    const cleanedUsername = normalizeUsername(username);
+    if (cleanedUsername && cleanedUsername.length < 3) {
+      toast.error("Username должен содержать минимум 3 символа");
+      return;
+    }
+    if (age && (Number(age) < 14 || Number(age) > 120)) {
+      toast.error("Возраст должен быть от 14 до 120");
+      return;
+    }
+    if (yearsExp && Number(yearsExp) < 0) {
+      toast.error("Опыт не может быть отрицательным");
+      return;
+    }
+    if (hourlyRate && Number(hourlyRate) < 0) {
+      toast.error("Ставка не может быть отрицательной");
+      return;
+    }
+
+    setSavingProfile(true);
+    const payload = currentProfilePayload();
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert(payload, { onConflict: "id" })
+      .select("*")
+      .single();
+    setSavingProfile(false);
+
+    if (error) {
+      if (error.code === "23505") toast.error("Этот nickname или username уже занят");
+      else toast.error(error.message);
+      return;
+    }
+
+    setUsername(cleanedUsername ?? "");
+    setProfileForAi(data);
+    toast.success("Настройки сохранены");
+  };
+
+  const updateAvatarUrl = async (
+    nextAvatarUrl: string | null,
+  ): Promise<{ data: any; error: { message: string } | null }> => {
+    if (!user) return { data: null, error: null };
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({ ...currentProfilePayload(), avatar_url: nextAvatarUrl }, { onConflict: "id" })
+      .select("*")
+      .single();
+    return { data, error };
+  };
 
   const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,95 +206,78 @@ function SettingsPage() {
       toast.error("Размер файла не должен превышать 5 МБ");
       return;
     }
+
     setUploadingAvatar(true);
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(path, file, { upsert: true, contentType: file.type });
-    if (upErr) {
+
+    if (uploadError) {
       setUploadingAvatar(false);
-      toast.error(upErr.message);
+      toast.error(uploadError.message);
       return;
     }
+
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const publicUrl = `${pub.publicUrl}?t=${Date.now()}`;
-    const { error: updErr } = await supabase
-      .from("profiles")
-      .update({ avatar_url: publicUrl })
-      .eq("id", user.id);
+    const { data, error } = await updateAvatarUrl(publicUrl);
     setUploadingAvatar(false);
-    if (updErr) {
-      toast.error(updErr.message);
+
+    if (error) {
+      toast.error(error.message);
       return;
     }
+
     setAvatarUrl(publicUrl);
+    setProfileForAi(data);
     toast.success("Фото профиля обновлено");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeAvatar = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ avatar_url: null })
-      .eq("id", user.id);
+    setUploadingAvatar(true);
+    const { data, error } = await updateAvatarUrl(null);
+    setUploadingAvatar(false);
+
     if (error) {
       toast.error(error.message);
       return;
     }
+
     setAvatarUrl(null);
+    setProfileForAi(data);
     toast.success("Фото удалено");
   };
 
-  const saveNickname = async () => {
-    if (!user) return;
-    setSavingNick(true);
-    const cleanedUsername = username
-      ? username.toLowerCase().trim().replace(/[^a-z0-9_-]/g, "")
-      : null;
-    if (cleanedUsername && cleanedUsername.length < 3) {
-      toast.error("Username должен содержать минимум 3 символа");
-      setSavingNick(false);
-      return;
-    }
-    const { error } = await supabase
-      .from("profiles")
-      .update({ nickname: nickname || null, username: cleanedUsername })
-      .eq("id", user.id);
-    setSavingNick(false);
-    if (error) {
-      if (error.code === "23505") toast.error("Этот username уже занят");
-      else toast.error(error.message);
-      return;
-    }
-    setInitialNickname(nickname);
-    setInitialUsername(cleanedUsername ?? "");
-    toast.success("Профиль обновлён");
-  };
-
   const changeEmail = async () => {
-    if (!newEmail || newEmail === currentEmail) {
+    const email = newEmail.trim();
+    if (!email || email === currentEmail) {
       toast.error("Введите новый email");
       return;
     }
+
     setSavingEmail(true);
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await supabase.auth.updateUser({ email });
     setSavingEmail(false);
+
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success(
-      "Письмо для подтверждения отправлено на новый email. Перейдите по ссылке, чтобы завершить смену."
-    );
+
+    toast.success("Письмо для подтверждения отправлено на новый email");
     setNewEmail("");
   };
 
-  const nickDirty = nickname !== initialNickname || username !== initialUsername;
-
   const getProfileAdvice = async () => {
-    if (!profileForAi) return;
+    if (!profileForAi) {
+      toast.info("Сначала сохраните профиль");
+      return;
+    }
+
     setAiLoading(true);
     try {
       const result = await aiProfileAdvisor({ data: { profile: profileForAi } });
@@ -179,9 +297,10 @@ function SettingsPage() {
 
   const analyzeResume = async () => {
     if (resumeText.trim().length < 20) {
-      toast.error("Paste resume text or choose a text resume file first");
+      toast.error("Вставьте текст резюме или выберите текстовый файл");
       return;
     }
+
     setResumeLoading(true);
     try {
       const result = await aiResumeAssistant({ data: { resumeText } });
@@ -196,14 +315,263 @@ function SettingsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
-      <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
-      <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
+      <div className="mx-auto max-w-6xl px-4 pt-4">
+        <BackButton />
+      </div>
+      <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Настройки</h1>
           <p className="text-sm text-muted-foreground">
-            Управляйте никнеймом и привязанной почтой.
+            Управляйте профилем, фото, навыками и привязанной почтой.
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Профиль</CardTitle>
+            <CardDescription>
+              Эти данные видят клиенты и фрилансеры на страницах каталога и проектов.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {loadingProfile ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                Загрузка профиля...
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Роль</Label>
+                    <Select value={kind} onValueChange={(value) => setKind(value as UserKind)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="freelancer">Фрилансер</SelectItem>
+                        <SelectItem value="client">Клиент</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Доступность</Label>
+                    <Select value={availability} onValueChange={setAvailability}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AVAILABILITY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Имя</Label>
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Никнейм</Label>
+                    <Input
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      maxLength={50}
+                      placeholder="Ваш отображаемый никнейм"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Username</Label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                    minLength={3}
+                    maxLength={30}
+                    placeholder="johndoe"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Только латинские буквы, цифры, _ и -. От 3 до 30 символов.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>Страна</Label>
+                    <Select value={country} onValueChange={setCountry}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Город</Label>
+                    <Input value={city} onChange={(e) => setCity(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Возраст</Label>
+                    <Input
+                      type="number"
+                      min={14}
+                      max={120}
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Специализация</Label>
+                  <Select value={specializationChoice} onValueChange={setSpecializationChoice}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SPECIALIZATIONS.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {specializationChoice === "Other" && (
+                    <Input
+                      className="mt-2"
+                      value={specializationOther}
+                      onChange={(e) => setSpecializationOther(e.target.value)}
+                      placeholder="Введите специализацию"
+                    />
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Опыт, лет</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={yearsExp}
+                      onChange={(e) => setYearsExp(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Ставка в час, USD</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Навыки</Label>
+                  <SkillMultiSelect value={selectedSkills} onChange={setSelectedSkills} max={15} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>О себе</Label>
+                  <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>GitHub</Label>
+                    <Input value={github} onChange={(e) => setGithub(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>LinkedIn</Label>
+                    <Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={saveProfile} disabled={savingProfile}>
+                    {savingProfile ? "Сохранение..." : "Сохранить профиль"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Фото профиля</CardTitle>
+            <CardDescription>Загрузите аватар JPG, PNG или WebP до 5 МБ.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Avatar className="size-20">
+                <AvatarImage src={avatarUrl ?? undefined} alt={fullName || "avatar"} />
+                <AvatarFallback>
+                  {(fullName || nickname || currentEmail || "?").slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onAvatarChange}
+                />
+                <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
+                  {uploadingAvatar ? "Загрузка..." : avatarUrl ? "Изменить фото" : "Загрузить фото"}
+                </Button>
+                {avatarUrl && (
+                  <Button variant="ghost" onClick={removeAvatar} disabled={uploadingAvatar}>
+                    Удалить
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Email</CardTitle>
+            <CardDescription>
+              На новый адрес придет письмо для подтверждения смены почты.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Текущий email</Label>
+              <Input value={currentEmail} disabled />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Новый email</Label>
+              <Input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="new@example.com"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={changeEmail} disabled={savingEmail || !newEmail.trim()}>
+                {savingEmail ? "Отправка..." : "Сменить email"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -211,7 +579,7 @@ function SettingsPage() {
               <Bot className="size-4 text-primary" /> AI Profile Advisor
             </CardTitle>
             <CardDescription>
-              AI can suggest better positioning, skills, and portfolio improvements. It never saves changes automatically.
+              AI подскажет, как улучшить позиционирование, навыки и портфолио.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -243,7 +611,9 @@ function SettingsPage() {
                   <div className="rounded-md border border-border p-3">
                     <div className="text-xs font-medium text-muted-foreground">Portfolio improvements</div>
                     <ul className="mt-1 list-disc space-y-1 pl-4">
-                      {aiAdvice.portfolioImprovements.map((item: string) => <li key={item}>{item}</li>)}
+                      {aiAdvice.portfolioImprovements.map((item: string) => (
+                        <li key={item}>{item}</li>
+                      ))}
                     </ul>
                   </div>
                 )}
@@ -254,118 +624,11 @@ function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Фото профиля</CardTitle>
-            <CardDescription>Загрузите аватар (JPG, PNG, WebP — до 5 МБ).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Avatar className="size-20">
-                <AvatarImage src={avatarUrl ?? undefined} alt={fullName || "avatar"} />
-                <AvatarFallback>
-                  {(fullName || nickname || currentEmail || "?").slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={onAvatarChange}
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                >
-                  {uploadingAvatar
-                    ? "Загрузка..."
-                    : avatarUrl
-                    ? "Изменить фото"
-                    : "Загрузить фото"}
-                </Button>
-                {avatarUrl && (
-                  <Button variant="ghost" onClick={removeAvatar} disabled={uploadingAvatar}>
-                    Удалить
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Никнейм и username</CardTitle>
-            <CardDescription>Как вас будут видеть другие пользователи.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Никнейм</Label>
-              <Input
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                maxLength={50}
-                placeholder="Ваш отображаемый никнейм"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Username (уникальный)</Label>
-              <Input
-                value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
-                }
-                minLength={3}
-                maxLength={30}
-                placeholder="johndoe"
-              />
-              <p className="text-xs text-muted-foreground">
-                Только латинские буквы, цифры, _ и -. От 3 до 30 символов.
-              </p>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={saveNickname} disabled={savingNick || !nickDirty}>
-                {savingNick ? "Сохранение..." : "Сохранить"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Email</CardTitle>
-            <CardDescription>
-              Привяжите другую почту. На новый адрес придёт письмо для подтверждения.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Текущий email</Label>
-              <Input value={currentEmail} disabled />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Новый email</Label>
-              <Input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="new@example.com"
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={changeEmail} disabled={savingEmail || !newEmail}>
-                {savingEmail ? "Отправка..." : "Сменить email"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="size-4 text-primary" /> AI Resume Assistant
             </CardTitle>
             <CardDescription>
-              Analyze resume text for weaknesses and improvements. Files are not uploaded or overwritten.
+              Проверьте текст резюме. Файлы не загружаются и не сохраняются автоматически.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -378,7 +641,7 @@ function SettingsPage() {
               rows={6}
               value={resumeText}
               onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Paste resume text here..."
+              placeholder="Вставьте текст резюме..."
             />
             <Button variant="outline" onClick={analyzeResume} disabled={resumeLoading}>
               {resumeLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -389,13 +652,17 @@ function SettingsPage() {
                 <div className="rounded-md border border-border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Weaknesses</div>
                   <ul className="mt-1 list-disc space-y-1 pl-4">
-                    {(resumeAdvice.weaknesses ?? []).map((item: string) => <li key={item}>{item}</li>)}
+                    {(resumeAdvice.weaknesses ?? []).map((item: string) => (
+                      <li key={item}>{item}</li>
+                    ))}
                   </ul>
                 </div>
                 <div className="rounded-md border border-border p-3">
                   <div className="text-xs font-medium text-muted-foreground">Suggested improvements</div>
                   <ul className="mt-1 list-disc space-y-1 pl-4">
-                    {(resumeAdvice.improvements ?? []).map((item: string) => <li key={item}>{item}</li>)}
+                    {(resumeAdvice.improvements ?? []).map((item: string) => (
+                      <li key={item}>{item}</li>
+                    ))}
                   </ul>
                 </div>
                 {resumeAdvice.rewrittenSummary && (
