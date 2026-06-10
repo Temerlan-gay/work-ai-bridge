@@ -54,6 +54,7 @@ function VerifyCodePage() {
   const [resending, setResending] = useState(false);
   const [pending, setPending] = useState<PendingAuth | null>(null);
   const [checkedPending, setCheckedPending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   useEffect(() => {
     const nextPending = readPendingAuth();
@@ -64,6 +65,26 @@ function VerifyCodePage() {
     setPending(nextPending);
     setCheckedPending(true);
   }, [navigate]);
+
+  const sendCode = async (auth: PendingAuth, successMessage: string) => {
+    await sendEmailVerificationCode({ data: { email: auth.email } });
+    setCode("");
+    setSendStatus("sent");
+    toast.success(successMessage);
+  };
+
+  useEffect(() => {
+    if (!pending || sendStatus !== "idle") return;
+    setSendStatus("sending");
+    sendCode(pending, "We sent a 6-digit code to your email").catch((error: any) => {
+      setSendStatus("error");
+      if (error.message?.includes("RESEND_API_KEY")) {
+        toast.error("Email sending is not configured. Add RESEND_API_KEY.");
+      } else {
+        toast.error(error.message ?? "Could not send the confirmation code");
+      }
+    });
+  }, [pending, sendStatus]);
 
   const finishLogin = async (auth: Extract<PendingAuth, { mode: "login" }>) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -156,10 +177,9 @@ function VerifyCodePage() {
     if (!pending) return;
     setResending(true);
     try {
-      await sendEmailVerificationCode({ data: { email: pending.email } });
-      setCode("");
-      toast.success("We sent a new code");
+      await sendCode(pending, "We sent a new code");
     } catch (error: any) {
+      setSendStatus("error");
       if (error.message?.includes("RESEND_API_KEY")) {
         toast.error("Email sending is not configured. Add RESEND_API_KEY.");
       } else {
@@ -182,7 +202,11 @@ function VerifyCodePage() {
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight mb-1">Enter confirmation code</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            We sent a 6-digit code to {pending.email}
+            {sendStatus === "sending"
+              ? `Sending a 6-digit code to ${pending.email}`
+              : sendStatus === "error"
+                ? `Could not send the code to ${pending.email}. Try again.`
+              : `We sent a 6-digit code to ${pending.email}`}
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -210,10 +234,10 @@ function VerifyCodePage() {
               type="button"
               variant="ghost"
               className="w-full"
-              disabled={loading || resending}
+              disabled={loading || resending || sendStatus === "sending"}
               onClick={resend}
             >
-              {resending ? "Sending..." : "Send code again"}
+              {resending || sendStatus === "sending" ? "Sending..." : "Send code again"}
             </Button>
           </form>
 

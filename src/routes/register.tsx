@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { sendEmailVerificationCode } from "@/lib/auth/email-code.functions";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
 import { signInWithGoogle } from "@/lib/supabase-oauth";
 
@@ -82,7 +81,6 @@ function RegisterPage() {
         });
       }
 
-      await sendEmailVerificationCode({ data: { email: cleanedEmail } });
       sessionStorage.setItem(
         "pendingAuth",
         JSON.stringify({
@@ -93,14 +91,9 @@ function RegisterPage() {
           avatar: pendingAvatar,
         }),
       );
-      toast.success("We sent a 6-digit code to your email");
       navigate({ to: "/verify-code", replace: true });
     } catch (error: any) {
-      if (error.message?.includes("RESEND_API_KEY")) {
-        toast.error("Email sending is not configured. Add RESEND_API_KEY.");
-      } else {
-        toast.error(getFriendlyAuthError(error));
-      }
+      toast.error(getFriendlyAuthError(error));
     } finally {
       setLoading(false);
     }
@@ -195,7 +188,7 @@ function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending code..." : "Sign up"}
+              {loading ? "Opening..." : "Sign up"}
             </Button>
           </form>
 

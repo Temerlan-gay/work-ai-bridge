@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { sendEmailVerificationCode } from "@/lib/auth/email-code.functions";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
 import { signInWithGoogle } from "@/lib/supabase-oauth";
 
@@ -35,7 +34,6 @@ function LoginPage() {
 
     try {
       const cleanedEmail = email.trim().toLowerCase();
-      await sendEmailVerificationCode({ data: { email: cleanedEmail } });
       sessionStorage.setItem(
         "pendingAuth",
         JSON.stringify({
@@ -44,14 +42,9 @@ function LoginPage() {
           password,
         }),
       );
-      toast.success("We sent a 6-digit code to your email");
       navigate({ to: "/verify-code", replace: true });
     } catch (error: any) {
-      if (error.message?.includes("RESEND_API_KEY")) {
-        toast.error("Email sending is not configured. Add RESEND_API_KEY.");
-      } else {
-        toast.error(getFriendlyAuthError(error));
-      }
+      toast.error(getFriendlyAuthError(error));
     } finally {
       setLoading(false);
     }
@@ -119,7 +112,7 @@ function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending code..." : "Sign in"}
+              {loading ? "Opening..." : "Sign in"}
             </Button>
           </form>
 
