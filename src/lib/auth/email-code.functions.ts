@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+import { assertExpectedSupabaseProject } from "@/integrations/supabase/config";
 
 const EmailSchema = z.object({
   email: z.string().email().max(320),
@@ -11,6 +14,25 @@ const VerifyEmailSchema = EmailSchema.extend({
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function createPublicServerSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabasePublishableKey) {
+    throw new Error("Supabase server environment is not configured");
+  }
+
+  assertExpectedSupabaseProject(supabaseUrl);
+
+  return createClient<Database>(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 async function sha256(value: string) {
@@ -58,49 +80,20 @@ async function sendEmail(to: string, code: string) {
   }
 }
 
-async function ensureEmailIsAvailable(email: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-  let page = 1;
-  const perPage = 1000;
-
-  while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-
-    if (error) throw error;
-    const exists = data.users.some((user) => user.email?.toLowerCase() === email);
-    if (exists) {
-      throw new Error("ACCOUNT_ALREADY_REGISTERED");
-    }
-    if (data.users.length < perPage) return;
-    page += 1;
-  }
-}
-
 export const sendEmailVerificationCode = createServerFn({ method: "POST" })
   .inputValidator(EmailSchema)
   .handler(async ({ data }) => {
     const email = normalizeEmail(data.email);
-    await ensureEmailIsAvailable(email);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabase = createPublicServerSupabaseClient();
     const code = await createCode();
     const codeHash = await sha256(`${email}:${code}`);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    await supabaseAdmin
-      .from("email_verification_codes")
-      .update({ consumed_at: new Date().toISOString() })
-      .eq("email", email)
-      .is("consumed_at", null);
-
-    const { error } = await supabaseAdmin.from("email_verification_codes").insert({
-      email,
-      code_hash: codeHash,
-      expires_at: expiresAt,
+    const { error } = await (supabase as any).rpc("request_email_verification_code", {
+      p_email: email,
+      p_code_hash: codeHash,
+      p_expires_at: expiresAt,
     });
     if (error) throw error;
 
@@ -112,45 +105,18 @@ export const verifyEmailCode = createServerFn({ method: "POST" })
   .inputValidator(VerifyEmailSchema)
   .handler(async ({ data }) => {
     const email = normalizeEmail(data.email);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabase = createPublicServerSupabaseClient();
+    const submittedHash = await sha256(`${email}:${data.code}`);
 
-    const { data: row, error } = await supabaseAdmin
-      .from("email_verification_codes")
-      .select("id,code_hash,expires_at,attempts,consumed_at")
-      .eq("email", email)
-      .is("consumed_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: result, error } = await (supabase as any).rpc("verify_email_verification_code", {
+      p_email: email,
+      p_code_hash: submittedHash,
+    });
 
     if (error) throw error;
-    if (!row) return { ok: false, reason: "missing" as const };
-
-    if (new Date(row.expires_at).getTime() < Date.now()) {
-      await supabaseAdmin
-        .from("email_verification_codes")
-        .update({ consumed_at: new Date().toISOString() })
-        .eq("id", row.id);
-      return { ok: false, reason: "expired" as const };
-    }
-
-    if (row.attempts >= 5) {
-      return { ok: false, reason: "too_many_attempts" as const };
-    }
-
-    const submittedHash = await sha256(`${email}:${data.code}`);
-    if (submittedHash !== row.code_hash) {
-      await supabaseAdmin
-        .from("email_verification_codes")
-        .update({ attempts: row.attempts + 1 })
-        .eq("id", row.id);
-      return { ok: false, reason: "invalid" as const };
-    }
-
-    await supabaseAdmin
-      .from("email_verification_codes")
-      .update({ consumed_at: new Date().toISOString() })
-      .eq("id", row.id);
-
-    return { ok: true };
+    if (result === "ok") return { ok: true };
+    return {
+      ok: false,
+      reason: result as "missing" | "expired" | "too_many_attempts" | "invalid",
+    };
   });
