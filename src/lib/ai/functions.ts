@@ -6,8 +6,8 @@ import {
   AiFeatureSchema,
   ConfirmationDecisionSchema,
   ProjectDraftSchema,
-  SearchFiltersSchema,
 } from "./schemas";
+import { getAiMatchBot } from "./bots";
 
 const JsonRecord = z.record(z.unknown());
 
@@ -46,21 +46,6 @@ async function runAi<T>(ctx: any, feature: string, action: string, prompt: strin
   await logAiAction(ctx, feature, action, prompt, output);
   return output;
 }
-
-export const aiNaturalLanguageSearch = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ query: z.string().min(2).max(500), mode: z.enum(["projects", "freelancers"]).default("projects") }))
-  .handler(async ({ data, context }) => {
-    const fallback = { query: data.query, category: undefined, skills: [] };
-    const result = await runAi(
-      context,
-      "natural_language_search",
-      "parse_filters",
-      `Convert this ${data.mode} search into filters: ${data.query}. JSON shape: { "query": string, "category": string|null, "skills": string[], "minBudget": number|null, "maxBudget": number|null, "timeline": string|null }`,
-      fallback,
-    );
-    return SearchFiltersSchema.partial().parse(result);
-  });
 
 export const aiGenerateProjectDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -163,18 +148,37 @@ export const aiReputationScore = createServerFn({ method: "POST" })
 
 export const aiFreelancerMatching = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ project: JsonRecord, freelancers: z.array(JsonRecord).max(80) }))
+  .inputValidator(z.object({
+    project: JsonRecord,
+    freelancers: z.array(JsonRecord).max(80),
+    botId: z.string().optional(),
+  }))
   .handler(async ({ data, context }) => {
-    return runAi(context, "freelancer_matching", "rank_freelancers", `Rank freelancers by skills, ratings, completed projects, activity, and relevance. Return {rankings:[{id:string,score:number,reasons:string[]}]}. Project: ${JSON.stringify(data.project)} Freelancers: ${JSON.stringify(data.freelancers)}`, {
+    const bot = getAiMatchBot(data.botId);
+    return runAi(context, "freelancer_matching", "rank_freelancers", `You are ${bot.name}: ${bot.role}. ${bot.prompt}
+The employer describes a project and needs suitable freelancers. Rank only genuinely suitable freelancers by skills, rating, completed projects, activity, relevance, rate, and reliability.
+If no freelancer is suitable, return an empty rankings array.
+Scores must be 0-100. Include only candidates with score >= 65.
+Return {rankings:[{id:string,score:number,reasons:string[]}]}. Project: ${JSON.stringify(data.project)} Freelancers: ${JSON.stringify(data.freelancers)}`, {
       rankings: [],
     });
   });
 
-export const aiProjectFeed = createServerFn({ method: "POST" })
+export const aiProjectMatching = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ profile: JsonRecord, projects: z.array(JsonRecord).max(120), behavior: JsonRecord.default({}) }))
+  .inputValidator(z.object({
+    request: z.string().min(5).max(2000),
+    profile: JsonRecord,
+    projects: z.array(JsonRecord).max(120),
+    botId: z.string().optional(),
+  }))
   .handler(async ({ data, context }) => {
-    return runAi(context, "project_feed", "rank_projects", `Rank projects for a personalized TikTok-like feed using skills, interests, viewed projects, and behavior. Return {rankings:[{id:string,score:number,reasons:string[]}]}. Data: ${JSON.stringify(data)}`, {
+    const bot = getAiMatchBot(data.botId);
+    return runAi(context, "project_feed", "rank_projects_for_freelancer", `You are ${bot.name}: ${bot.role}. ${bot.prompt}
+The freelancer describes their skills, budget wishes, schedule, and preferred vacancy. Rank only genuinely suitable open projects.
+If no project is suitable, return an empty rankings array.
+Scores must be 0-100. Include only projects with score >= 65.
+Return {rankings:[{id:string,score:number,reasons:string[]}]}. Freelancer request: ${data.request}. Profile: ${JSON.stringify(data.profile)} Projects: ${JSON.stringify(data.projects)}`, {
       rankings: [],
     });
   });

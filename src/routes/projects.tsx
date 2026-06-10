@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -15,7 +16,8 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/categories";
 import { useAuth } from "@/hooks/use-auth";
-import { aiNaturalLanguageSearch, aiProjectFeed } from "@/lib/ai/functions";
+import { aiProjectMatching } from "@/lib/ai/functions";
+import { AI_MATCH_BOTS, type AiMatchBotId } from "@/lib/ai/bots";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects")({
@@ -28,10 +30,12 @@ function ProjectsBrowse() {
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("");
-  const [aiQuery, setAiQuery] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [feedLoading, setFeedLoading] = useState(false);
+  const [matchRequest, setMatchRequest] = useState("");
+  const [selectedBot, setSelectedBot] = useState<AiMatchBotId>("tech_lead");
+  const [matchLoading, setMatchLoading] = useState(false);
   const [aiOrder, setAiOrder] = useState<Record<string, number>>({});
+  const [matchIds, setMatchIds] = useState<string[] | null>(null);
+  const [matchReasons, setMatchReasons] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     (async () => {
@@ -49,33 +53,24 @@ function ProjectsBrowse() {
 
   const filtered = items
     .filter((p) => !q || `${p.title} ${p.description} ${(p.skills_required ?? []).join(" ")}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((p) => !matchIds || matchIds.includes(p.id))
     .sort((a, b) => (aiOrder[b.id] ?? 0) - (aiOrder[a.id] ?? 0));
 
-  const aiSearch = async () => {
-    if (aiQuery.trim().length < 2) return;
-    setAiLoading(true);
-    try {
-      const parsed = await aiNaturalLanguageSearch({ data: { query: aiQuery, mode: "projects" } });
-      setQ(parsed.query ?? aiQuery);
-      if (parsed.category) setCat(parsed.category);
-      toast.success("AI converted your search into filters");
-    } catch (e: any) {
-      toast.error(e.message ?? "AI search failed");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const personalizeFeed = async () => {
+  const findProjects = async () => {
     if (!user) {
-      toast.info("Log in to personalize your project feed");
+      toast.info("Log in to use the AI vacancy matcher");
       return;
     }
-    setFeedLoading(true);
+    if (matchRequest.trim().length < 5) {
+      toast.info("Describe your skills, budget, and preferred work first");
+      return;
+    }
+    setMatchLoading(true);
     try {
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      const result = await aiProjectFeed({
+      const result = await aiProjectMatching({
         data: {
+          request: matchRequest,
           profile: profile ?? {},
           projects: items.map((p) => ({
             id: p.id,
@@ -86,17 +81,26 @@ function ProjectsBrowse() {
             budget: p.budget,
             created_at: p.created_at,
           })),
-          behavior: {},
+          botId: selectedBot,
         },
       });
       const next: Record<string, number> = {};
-      for (const row of result.rankings ?? []) next[row.id] = row.score;
+      const reasons: Record<string, string[]> = {};
+      const ids: string[] = [];
+      for (const row of result.rankings ?? []) {
+        next[row.id] = row.score;
+        reasons[row.id] = row.reasons ?? [];
+        ids.push(row.id);
+      }
       setAiOrder(next);
-      toast.success("AI personalized your feed");
+      setMatchReasons(reasons);
+      setMatchIds(ids);
+      if (ids.length === 0) toast.info("По вашему запросу у нас пока нет подходящих вакансий");
+      else toast.success("AI found matching projects");
     } catch (e: any) {
-      toast.error(e.message ?? "AI feed failed");
+      toast.error(e.message ?? "AI project matching failed");
     } finally {
-      setFeedLoading(false);
+      setMatchLoading(false);
     }
   };
 
@@ -108,22 +112,39 @@ function ProjectsBrowse() {
         <h1 className="text-3xl font-semibold tracking-tight mb-6">Open projects</h1>
         <div className="mb-4 rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-            <Bot className="size-4 text-primary" /> AI project discovery
+            <Bot className="size-4 text-primary" /> AI vacancy matcher for freelancers
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              placeholder="Need a React developer for an e-commerce website"
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
+          <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {AI_MATCH_BOTS.map((bot) => (
+              <button
+                key={bot.id}
+                type="button"
+                onClick={() => setSelectedBot(bot.id)}
+                className={`rounded-lg border p-3 text-left transition ${selectedBot === bot.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
+              >
+                <div className="text-sm font-medium">{bot.name}</div>
+                <div className="text-xs text-muted-foreground">{bot.quality}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Textarea
+              rows={3}
+              placeholder="Я React/Python/JS разработчик, хочу проект на e-commerce, бюджет от $800, срок до 2 недель..."
+              value={matchRequest}
+              onChange={(e) => setMatchRequest(e.target.value)}
             />
-            <Button variant="outline" onClick={aiSearch} disabled={aiLoading}>
-              {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              AI search
-            </Button>
-            <Button variant="outline" onClick={personalizeFeed} disabled={feedLoading}>
-              {feedLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              For you
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={findProjects} disabled={matchLoading}>
+                {matchLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                Find matching vacancies
+              </Button>
+              {matchIds && (
+                <Button variant="ghost" onClick={() => { setMatchIds(null); setAiOrder({}); setMatchReasons({}); }}>
+                  Clear AI match
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-3 mb-6">
@@ -141,7 +162,9 @@ function ProjectsBrowse() {
           </Select>
         </div>
         {filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No projects match your search.</p>
+          <p className="text-sm text-muted-foreground">
+            {matchIds ? "По вашему запросу у нас пока нет подходящих вакансий." : "No projects match your filters."}
+          </p>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((p) => (
@@ -154,6 +177,12 @@ function ProjectsBrowse() {
                 </div>
                 <div className="font-medium mb-1 line-clamp-2">{p.title}</div>
                 <div className="text-sm text-muted-foreground line-clamp-3">{p.description}</div>
+                {matchReasons[p.id]?.length > 0 && (
+                  <div className="mt-3 rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
+                    <div className="font-medium text-foreground">AI match: {aiOrder[p.id]}/100</div>
+                    {matchReasons[p.id].slice(0, 2).join(" · ")}
+                  </div>
+                )}
                 <div className="mt-3 text-sm font-medium text-primary">${p.budget ?? 0}</div>
               </Link>
             ))}

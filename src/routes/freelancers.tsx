@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -13,11 +14,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
-import { SlidersHorizontal, Search, X } from "lucide-react";
+import { Bot, Loader2, SlidersHorizontal, Search, Sparkles, X } from "lucide-react";
 import { COUNTRIES } from "@/lib/categories";
 import { SkillMultiSelect } from "@/components/skill-multi-select";
 import { FreelancerCard, isOnline, type FreelancerRow } from "@/components/freelancer-card";
 import { aiFreelancerMatching } from "@/lib/ai/functions";
+import { AI_MATCH_BOTS, type AiMatchBotId } from "@/lib/ai/bots";
 
 export const Route = createFileRoute("/freelancers")({
   head: () => ({
@@ -74,6 +76,10 @@ function Freelancers() {
   const [loading, setLoading] = useState(true);
   const [aiMatching, setAiMatching] = useState(false);
   const [aiOrder, setAiOrder] = useState<Record<string, number>>({});
+  const [matchIds, setMatchIds] = useState<string[] | null>(null);
+  const [matchReasons, setMatchReasons] = useState<Record<string, string[]>>({});
+  const [employerBrief, setEmployerBrief] = useState("");
+  const [selectedBot, setSelectedBot] = useState<AiMatchBotId>("tech_lead");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   useEffect(() => {
@@ -102,6 +108,7 @@ function Freelancers() {
     const q = filters.q.trim().toLowerCase();
     const cutoff = dateCutoff(filters.registered);
     let out = items.filter((p) => {
+      if (matchIds && !matchIds.includes(p.id ?? "")) return false;
       if (q) {
         const hay = `${p.full_name ?? ""} ${p.username ?? ""} ${p.bio ?? ""} ${(p.skills ?? []).join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -130,20 +137,27 @@ function Freelancers() {
       }
     });
     return out;
-  }, [items, filters]);
+  }, [items, filters, matchIds]);
 
   const reset = () => setFilters(DEFAULT_FILTERS);
   const aiMatch = async () => {
-    const prompt = filters.q.trim() || filters.skills.join(", ");
+    const prompt = employerBrief.trim();
     if (!prompt) {
-      toast.info("Enter a search or skills first");
+      toast.info("Describe your project and required freelancer first");
       return;
     }
     setAiMatching(true);
     try {
       const result = await aiFreelancerMatching({
         data: {
-          project: { description: prompt, skills: filters.skills },
+          project: {
+            description: prompt,
+            skills: filters.skills,
+            minRating: filters.minRating,
+            minProjects: filters.minProjects,
+            budgetRateRange: filters.rate,
+            availability: filters.availability,
+          },
           freelancers: items.map((p) => ({
             id: p.id,
             full_name: p.full_name,
@@ -155,12 +169,22 @@ function Freelancers() {
             last_seen_at: p.last_seen_at,
             hourly_rate: p.hourly_rate,
           })),
+          botId: selectedBot,
         },
       });
       const next: Record<string, number> = {};
-      for (const row of result.rankings ?? []) next[row.id] = row.score;
+      const reasons: Record<string, string[]> = {};
+      const ids: string[] = [];
+      for (const row of result.rankings ?? []) {
+        next[row.id] = row.score;
+        reasons[row.id] = row.reasons ?? [];
+        ids.push(row.id);
+      }
       setAiOrder(next);
-      toast.success("AI ranked freelancers by relevance");
+      setMatchReasons(reasons);
+      setMatchIds(ids);
+      if (ids.length === 0) toast.info("По вашему запросу у нас пока нет таких фрилансеров");
+      else toast.success("AI found matching freelancers");
     } catch (e: any) {
       toast.error(e.message ?? "AI matching failed");
     } finally {
@@ -309,9 +333,6 @@ function Freelancers() {
                 <SelectItem value="recent">Newest</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={aiMatch} disabled={aiMatching}>
-              {aiMatching ? "AI..." : "AI match"}
-            </Button>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="lg:hidden relative">
@@ -328,6 +349,44 @@ function Freelancers() {
           </div>
         </div>
 
+        <section className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <Bot className="size-4 text-primary" /> AI recruiter for employers
+          </div>
+          <div className="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {AI_MATCH_BOTS.map((bot) => (
+              <button
+                key={bot.id}
+                type="button"
+                onClick={() => setSelectedBot(bot.id)}
+                className={`rounded-lg border p-3 text-left transition ${selectedBot === bot.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
+              >
+                <div className="text-sm font-medium">{bot.name}</div>
+                <div className="text-xs text-muted-foreground">{bot.quality}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Textarea
+              rows={3}
+              placeholder="У меня e-commerce проект. Нужен человек, который знает React, Python, JS, рейтинг от 4.5, срок 2 недели..."
+              value={employerBrief}
+              onChange={(e) => setEmployerBrief(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={aiMatch} disabled={aiMatching}>
+                {aiMatching ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                Find matching freelancers
+              </Button>
+              {matchIds && (
+                <Button variant="ghost" onClick={() => { setMatchIds(null); setAiOrder({}); setMatchReasons({}); }}>
+                  Clear AI match
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
+
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
           <aside className="hidden lg:block">
             <div className="sticky top-20 rounded-2xl border border-border bg-card p-5">
@@ -343,13 +402,23 @@ function Freelancers() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-                <p className="text-sm text-muted-foreground">No freelancers match your filters.</p>
+                <p className="text-sm text-muted-foreground">
+                  {matchIds ? "По вашему запросу у нас пока нет таких фрилансеров." : "No freelancers match your filters."}
+                </p>
                 <Button variant="link" onClick={reset}>Clear filters</Button>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map((p) => (
-                  <FreelancerCard key={p.id} p={p} onMessage={message} selfId={user?.id} />
+                  <div key={p.id} className="space-y-2">
+                    <FreelancerCard p={p} onMessage={message} selfId={user?.id} />
+                    {p.id && matchReasons[p.id]?.length > 0 && (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                        <div className="font-medium text-foreground">AI match: {aiOrder[p.id]}/100</div>
+                        {matchReasons[p.id].slice(0, 3).join(" · ")}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
