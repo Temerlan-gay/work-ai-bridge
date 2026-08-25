@@ -6,6 +6,7 @@ interface AuthCtx {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  error: Error | null;
   signOut: () => Promise<void>;
 }
 
@@ -14,22 +15,48 @@ const Ctx = createContext<AuthCtx | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    let unsubscribe: (() => void) | undefined;
+
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_e, s) => {
+        setSession(s);
+        setLoading(false);
+      });
+      unsubscribe = () => subscription.unsubscribe();
+
+      supabase.auth
+        .getSession()
+        .then(({ data, error: sessionError }) => {
+          if (sessionError) setError(sessionError);
+          setSession(data.session);
+        })
+        .catch((cause: unknown) => {
+          const authError = cause instanceof Error ? cause : new Error(String(cause));
+          console.error("[Auth] Unable to restore session", authError);
+          setError(authError);
+        })
+        .finally(() => setLoading(false));
+    } catch (cause) {
+      const authError = cause instanceof Error ? cause : new Error(String(cause));
+      console.error("[Auth] Unable to initialize Supabase", authError);
+      setError(authError);
       setLoading(false);
-    });
-    return () => subscription.unsubscribe();
+    }
+
+    return () => unsubscribe?.();
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signOut }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, error, signOut }}>
       {children}
     </Ctx.Provider>
   );

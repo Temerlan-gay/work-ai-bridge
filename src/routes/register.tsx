@@ -107,6 +107,8 @@ function RegisterPage() {
 
       toast.success("Account created. Now you can sign in.");
       navigate({ to: "/login", replace: true });
+    } catch (cause) {
+      toast.error(getFriendlyAuthError(cause));
     } finally {
       setLoading(false);
     }
@@ -114,9 +116,14 @@ function RegisterPage() {
 
   const google = async () => {
     setGoogleLoading(true);
-    const { error } = await signInWithGoogle("/onboarding");
-    setGoogleLoading(false);
-    if (error) toast.error(getFriendlyAuthError(error));
+    try {
+      const { error } = await signInWithGoogle("/onboarding");
+      if (error) toast.error(getFriendlyAuthError(error));
+    } catch (cause) {
+      toast.error(getFriendlyAuthError(cause));
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (

@@ -3,9 +3,10 @@ type AuthLikeError = {
   message?: string;
 };
 
-export function getFriendlyAuthError(error: AuthLikeError): string {
-  const code = error.code ?? "";
-  const message = error.message ?? "Authentication failed. Please try again.";
+export function getFriendlyAuthError(error: AuthLikeError | unknown): string {
+  const authError = error && typeof error === "object" ? (error as AuthLikeError) : {};
+  const code = authError.code ?? "";
+  const message = authError.message ?? "Authentication failed. Please try again.";
   const lower = message.toLowerCase();
 
   if (code === "invalid_credentials" || lower.includes("invalid login credentials")) {

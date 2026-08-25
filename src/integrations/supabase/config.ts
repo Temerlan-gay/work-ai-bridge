@@ -1,6 +1,3 @@
-export const EXPECTED_SUPABASE_PROJECT_ID = "sqvnckkatskkyngbanlh";
-export const EXPECTED_SUPABASE_URL = `https://${EXPECTED_SUPABASE_PROJECT_ID}.supabase.co`;
-
 export function getSupabaseProjectId(url: string): string | undefined {
   try {
     const host = new URL(url).hostname;
@@ -15,15 +12,13 @@ export function assertExpectedSupabaseProject(url: string, projectId?: string): 
   const urlProjectId = getSupabaseProjectId(url);
   const configuredProjectId = projectId?.trim();
 
-  if (urlProjectId !== EXPECTED_SUPABASE_PROJECT_ID) {
-    throw new Error(
-      `Supabase URL project mismatch. Expected ${EXPECTED_SUPABASE_URL}, got ${url}. Update SUPABASE_URL and VITE_SUPABASE_URL, then rebuild/redeploy.`,
-    );
+  if (!urlProjectId) {
+    throw new Error(`Invalid Supabase URL: ${url}. Use https://PROJECT_REF.supabase.co.`);
   }
 
-  if (configuredProjectId && configuredProjectId !== EXPECTED_SUPABASE_PROJECT_ID) {
+  if (configuredProjectId && configuredProjectId !== urlProjectId) {
     throw new Error(
-      `Supabase project ID mismatch. Expected ${EXPECTED_SUPABASE_PROJECT_ID}, got ${configuredProjectId}. Update VITE_SUPABASE_PROJECT_ID, then rebuild/redeploy.`,
+      `Supabase project ID mismatch. VITE_SUPABASE_PROJECT_ID is ${configuredProjectId}, but VITE_SUPABASE_URL points to ${urlProjectId}. Update the variables so they use the same project.`,
     );
   }
 }

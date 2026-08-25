@@ -33,30 +33,40 @@ function LoginPage() {
     event.preventDefault();
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-    setLoading(false);
-    if (error) {
-      toast.error(getFriendlyAuthError(error));
-      return;
-    }
-    if (!data.session) {
-      toast.error("Could not sign in. Check your details and try again.");
-      return;
-    }
+      if (error) {
+        toast.error(getFriendlyAuthError(error));
+        return;
+      }
+      if (!data.session) {
+        toast.error("Could not sign in. Check your details and try again.");
+        return;
+      }
 
-    toast.success("You are signed in");
-    navigate({ to: "/dashboard", replace: true });
+      toast.success("You are signed in");
+      navigate({ to: "/dashboard", replace: true });
+    } catch (cause) {
+      toast.error(getFriendlyAuthError(cause));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const google = async () => {
     setGoogleLoading(true);
-    const { error } = await signInWithGoogle("/dashboard");
-    setGoogleLoading(false);
-    if (error) toast.error(getFriendlyAuthError(error));
+    try {
+      const { error } = await signInWithGoogle("/dashboard");
+      if (error) toast.error(getFriendlyAuthError(error));
+    } catch (cause) {
+      toast.error(getFriendlyAuthError(cause));
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
