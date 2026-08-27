@@ -21,17 +21,17 @@ import { AI_MATCH_BOTS, type AiMatchBotId } from "@/lib/ai/bots";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects")({
-  head: () => ({ meta: [{ title: "Projects — WorkBridge" }] }),
-  component: ProjectsBrowse,
+  head: () => ({ meta: [{ title: "Возможности - TalentBridge" }] }),
+  component: OpportunitiesBrowse,
 });
 
-function ProjectsBrowse() {
+function OpportunitiesBrowse() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("");
   const [matchRequest, setMatchRequest] = useState("");
-  const [selectedBot, setSelectedBot] = useState<AiMatchBotId>("tech_lead");
+  const [selectedBot, setSelectedBot] = useState<AiMatchBotId>("mentor_match");
   const [matchLoading, setMatchLoading] = useState(false);
   const [aiOrder, setAiOrder] = useState<Record<string, number>>({});
   const [matchIds, setMatchIds] = useState<string[] | null>(null);
@@ -58,11 +58,11 @@ function ProjectsBrowse() {
 
   const findProjects = async () => {
     if (!user) {
-      toast.info("Log in to use the AI vacancy matcher");
+      toast.info("Войдите, чтобы использовать AI-подбор возможностей.");
       return;
     }
     if (matchRequest.trim().length < 5) {
-      toast.info("Describe your skills, budget, and preferred work first");
+      toast.info("Опишите свои навыки, возраст, город и желаемое направление.");
       return;
     }
     setMatchLoading(true);
@@ -95,10 +95,10 @@ function ProjectsBrowse() {
       setAiOrder(next);
       setMatchReasons(reasons);
       setMatchIds(ids);
-      if (ids.length === 0) toast.info("По вашему запросу у нас пока нет подходящих вакансий");
-      else toast.success("AI found matching projects");
+      if (ids.length === 0) toast.info("По вашему запросу подходящих возможностей пока не найдено.");
+      else toast.success("AI нашел подходящие возможности");
     } catch (e: any) {
-      toast.error(e.message ?? "AI project matching failed");
+      toast.error(e.message ?? "AI-подбор временно недоступен");
     } finally {
       setMatchLoading(false);
     }
@@ -109,10 +109,10 @@ function ProjectsBrowse() {
       <SiteHeader />
       <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-3xl font-semibold tracking-tight mb-6">Open projects</h1>
+        <h1 className="mb-6 text-3xl font-semibold tracking-tight">Открытые возможности</h1>
         <div className="mb-4 rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-            <Bot className="size-4 text-primary" /> AI vacancy matcher for freelancers
+            <Bot className="size-4 text-primary" /> AI-подбор возможностей для подростков
           </div>
           <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {AI_MATCH_BOTS.map((bot) => (
@@ -130,31 +130,31 @@ function ProjectsBrowse() {
           <div className="flex flex-col gap-2">
             <Textarea
               rows={3}
-              placeholder="Я React/Python/JS разработчик, хочу проект на e-commerce, бюджет от $800, срок до 2 недель..."
+              placeholder="Я футболист 15 лет, ищу команду или турнир в своем городе... или рисую иллюстрации и хочу попасть в школьный медиа-проект..."
               value={matchRequest}
               onChange={(e) => setMatchRequest(e.target.value)}
             />
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={findProjects} disabled={matchLoading}>
                 {matchLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                Find matching vacancies
+                Найти подходящие возможности
               </Button>
               {matchIds && (
                 <Button variant="ghost" onClick={() => { setMatchIds(null); setAiOrder({}); setMatchReasons({}); }}>
-                  Clear AI match
+                  Сбросить AI-подбор
                 </Button>
               )}
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3 mb-6">
-          <Input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+        <div className="mb-6 flex flex-wrap gap-3">
+          <Input placeholder="Поиск..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
           <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue placeholder="All categories" />
+            <SelectTrigger className="h-9 w-[220px]">
+              <SelectValue placeholder="Все сферы" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
+              <SelectItem value="all">Все сферы</SelectItem>
               {CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
@@ -163,27 +163,29 @@ function ProjectsBrowse() {
         </div>
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {matchIds ? "По вашему запросу у нас пока нет подходящих вакансий." : "No projects match your filters."}
+            {matchIds ? "По вашему запросу подходящих возможностей пока не найдено." : "По выбранным фильтрам возможности не найдены."}
           </p>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
-              <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="rounded-xl border border-border bg-card p-5 hover:border-primary/40 transition">
-                <div className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+              <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="rounded-xl border border-border bg-card p-5 transition hover:border-primary/40">
+                <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{p.category}</span>
-                  {p.boosted_at && Date.now() - new Date(p.boosted_at).getTime() < 7*24*60*60*1000 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-medium">★ TOP</span>
+                  {p.boosted_at && Date.now() - new Date(p.boosted_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">★ TOP</span>
                   )}
                 </div>
-                <div className="font-medium mb-1 line-clamp-2">{p.title}</div>
-                <div className="text-sm text-muted-foreground line-clamp-3">{p.description}</div>
+                <div className="mb-1 line-clamp-2 font-medium">{p.title}</div>
+                <div className="line-clamp-3 text-sm text-muted-foreground">{p.description}</div>
                 {matchReasons[p.id]?.length > 0 && (
                   <div className="mt-3 rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
-                    <div className="font-medium text-foreground">AI match: {aiOrder[p.id]}/100</div>
+                    <div className="font-medium text-foreground">AI-подбор: {aiOrder[p.id]}/100</div>
                     {matchReasons[p.id].slice(0, 2).join(" · ")}
                   </div>
                 )}
-                <div className="mt-3 text-sm font-medium text-primary">${p.budget ?? 0}</div>
+                <div className="mt-3 text-sm font-medium text-primary">
+                  {p.budget ? `$${p.budget}` : "Без оплаты / по условиям"}
+                </div>
               </Link>
             ))}
           </div>

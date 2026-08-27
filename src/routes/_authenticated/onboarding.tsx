@@ -19,7 +19,7 @@ import { Briefcase, User } from "lucide-react";
 import { SkillMultiSelect } from "@/components/skill-multi-select";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "Get started — WorkBridge" }] }),
+  head: () => ({ meta: [{ title: "Начало - TalentBridge" }] }),
   component: Onboarding,
 });
 
@@ -38,7 +38,7 @@ function Onboarding() {
   const [country, setCountry] = useState<string>("Russia");
   const [city, setCity] = useState("");
   const [age, setAge] = useState<string>("");
-  const [specializationChoice, setSpecializationChoice] = useState<string>("Fullstack Developer");
+  const [specializationChoice, setSpecializationChoice] = useState<string>("Футболист");
   const [specializationOther, setSpecializationOther] = useState("");
   const [skills, setSkills] = useState("");
   const [bio, setBio] = useState("");
@@ -48,6 +48,10 @@ function Onboarding() {
 
   useEffect(() => {
     if (!user) return;
+    const meta = user.user_metadata ?? {};
+    if (typeof meta.full_name === "string") setFullName(meta.full_name);
+    if (typeof meta.specialization === "string") setSpecializationChoice(meta.specialization);
+
     supabase
       .from("profiles")
       .select("*")
@@ -56,8 +60,9 @@ function Onboarding() {
       .then(({ data }) => {
         if (data?.onboarded) navigate({ to: "/dashboard", replace: true });
         if (data) {
-          setFullName(data.full_name ?? "");
+          setFullName(data.full_name ?? meta.full_name ?? "");
           setNickname(data.nickname ?? "");
+          if (data.specialization) setSpecializationChoice(data.specialization);
         }
       });
   }, [user, navigate]);
@@ -66,7 +71,7 @@ function Onboarding() {
     if (!user) return;
     setSaving(true);
     const specialization =
-      specializationChoice === "Other" ? specializationOther.trim() : specializationChoice;
+      specializationChoice === "Другое" ? specializationOther.trim() : specializationChoice;
     const { error } = await supabase.from("profiles").upsert(
       {
         id: user.id,
@@ -93,15 +98,16 @@ function Onboarding() {
       },
       { onConflict: "id" },
     );
-    // also seed user_roles
+
     await supabase
       .from("user_roles")
       .insert({ user_id: user.id, role: kind })
       .then(() => {});
     setSaving(false);
+
     if (error) toast.error(error.message);
     else {
-      toast.success("Welcome to WorkBridge!");
+      toast.success("Профиль TalentBridge готов!");
       navigate({ to: "/dashboard" });
     }
   };
@@ -110,13 +116,13 @@ function Onboarding() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          Step {step} of 3
+          Шаг {step} из 3
         </div>
         {step === 1 && (
           <>
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">I want to…</h1>
+            <h1 className="text-2xl font-semibold tracking-tight mb-1">Я хочу...</h1>
             <p className="text-sm text-muted-foreground mb-6">
-              Choose how you'll use WorkBridge. You can change this later.
+              Выберите роль на платформе. Ее можно изменить позже.
             </p>
             <div className="grid sm:grid-cols-2 gap-3">
               <button
@@ -124,9 +130,9 @@ function Onboarding() {
                 className={`text-left rounded-xl border p-5 transition ${kind === "freelancer" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
               >
                 <Briefcase className="size-5 mb-3 text-primary" />
-                <div className="font-medium">Work as a freelancer</div>
+                <div className="font-medium">Подросток</div>
                 <div className="text-sm text-muted-foreground">
-                  Find projects and build a reputation.
+                  Найти наставников, команды, проекты и возможности для роста.
                 </div>
               </button>
               <button
@@ -134,60 +140,63 @@ function Onboarding() {
                 className={`text-left rounded-xl border p-5 transition ${kind === "client" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"}`}
               >
                 <User className="size-5 mb-3 text-primary" />
-                <div className="font-medium">Hire freelancers</div>
-                <div className="text-sm text-muted-foreground">Post projects and find talent.</div>
+                <div className="font-medium">Потребитель</div>
+                <div className="text-sm text-muted-foreground">
+                  Публиковать задания, отборы, секции и мероприятия.
+                </div>
               </button>
             </div>
             <div className="mt-8 flex justify-end">
-              <Button onClick={() => setStep(2)}>Next</Button>
+              <Button onClick={() => setStep(2)}>Далее</Button>
             </div>
           </>
         )}
+
         {step === 2 && (
           <>
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">About you</h1>
-            <p className="text-sm text-muted-foreground mb-6">Tell us the basics.</p>
+            <h1 className="text-2xl font-semibold tracking-tight mb-1">О вас</h1>
+            <p className="text-sm text-muted-foreground mb-6">Заполните базовые данные профиля.</p>
             <div className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Full name</Label>
+                  <Label>Имя и фамилия</Label>
                   <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Nickname</Label>
+                  <Label>Никнейм</Label>
                   <Input value={nickname} onChange={(e) => setNickname(e.target.value)} />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Username (unique)</Label>
+                  <Label>Уникальное имя профиля</Label>
                   <Input
                     value={username}
                     onChange={(e) =>
                       setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
                     }
-                    placeholder="johndoe"
+                    placeholder="ivan_football"
                     minLength={3}
                     maxLength={30}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Availability</Label>
+                  <Label>Статус</Label>
                   <Select value={availability} onValueChange={setAvailability}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="busy">Busy</SelectItem>
-                      <SelectItem value="not_available">Not available</SelectItem>
+                      <SelectItem value="available">Готов к предложениям</SelectItem>
+                      <SelectItem value="busy">Занят учебой/проектом</SelectItem>
+                      <SelectItem value="not_available">Пока не доступен</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Country</Label>
+                  <Label>Страна</Label>
                   <Select value={country} onValueChange={setCountry}>
                     <SelectTrigger>
                       <SelectValue />
@@ -202,22 +211,22 @@ function Onboarding() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>City</Label>
+                  <Label>Город</Label>
                   <Input value={city} onChange={(e) => setCity(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Age</Label>
+                  <Label>Возраст</Label>
                   <Input
                     type="number"
-                    min={14}
-                    max={120}
+                    min={7}
+                    max={25}
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Specialization</Label>
+                <Label>Направление / профессия</Label>
                 <Select value={specializationChoice} onValueChange={setSpecializationChoice}>
                   <SelectTrigger>
                     <SelectValue />
@@ -230,30 +239,31 @@ function Onboarding() {
                     ))}
                   </SelectContent>
                 </Select>
-                {specializationChoice === "Other" && (
+                {specializationChoice === "Другое" && (
                   <Input
                     className="mt-2"
-                    placeholder="Enter your specialization"
+                    placeholder="Введите свое направление"
                     value={specializationOther}
                     onChange={(e) => setSpecializationOther(e.target.value)}
                   />
                 )}
               </div>
+
               {kind === "freelancer" && (
                 <>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label>Years of experience</Label>
+                      <Label>Лет практики</Label>
                       <Input
                         type="number"
                         min={0}
-                        max={60}
+                        max={20}
                         value={yearsExp}
                         onChange={(e) => setYearsExp(e.target.value)}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Hourly rate (USD)</Label>
+                      <Label>Желаемое вознаграждение ($)</Label>
                       <Input
                         type="number"
                         min={0}
@@ -263,20 +273,17 @@ function Onboarding() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Skills & expertise</Label>
-                    <SkillMultiSelect
-                      value={selectedSkills}
-                      onChange={setSelectedSkills}
-                      max={15}
-                    />
+                    <Label>Навыки и сильные стороны</Label>
+                    <SkillMultiSelect value={selectedSkills} onChange={setSelectedSkills} max={15} />
                   </div>
                 </>
               )}
+
               {kind === "client" && (
                 <div className="space-y-1.5">
-                  <Label>Skills you usually look for (optional)</Label>
+                  <Label>Какие таланты вы обычно ищете (необязательно)</Label>
                   <Input
-                    placeholder="React, Figma"
+                    placeholder="Футбол, рисунок, робототехника"
                     value={skills}
                     onChange={(e) => setSkills(e.target.value)}
                   />
@@ -285,34 +292,37 @@ function Onboarding() {
             </div>
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep(1)}>
-                Back
+                Назад
               </Button>
-              <Button onClick={() => setStep(3)}>Next</Button>
+              <Button onClick={() => setStep(3)}>Далее</Button>
             </div>
           </>
         )}
+
         {step === 3 && (
           <>
-            <h1 className="text-2xl font-semibold tracking-tight mb-1">Last details</h1>
-            <p className="text-sm text-muted-foreground mb-6">Add a bio and social links.</p>
+            <h1 className="text-2xl font-semibold tracking-tight mb-1">Последние детали</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Добавьте описание, достижения и ссылки.
+            </p>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Bio</Label>
+                <Label>О себе и достижениях</Label>
                 <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>GitHub</Label>
+                  <Label>GitHub / портфолио</Label>
                   <Input
-                    placeholder="username"
+                    placeholder="username или ссылка"
                     value={github}
                     onChange={(e) => setGithub(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>LinkedIn</Label>
+                  <Label>Соцсеть / резюме</Label>
                   <Input
-                    placeholder="url"
+                    placeholder="ссылка"
                     value={linkedin}
                     onChange={(e) => setLinkedin(e.target.value)}
                   />
@@ -321,10 +331,10 @@ function Onboarding() {
             </div>
             <div className="mt-8 flex justify-between">
               <Button variant="ghost" onClick={() => setStep(2)}>
-                Back
+                Назад
               </Button>
               <Button onClick={save} disabled={saving}>
-                {saving ? "Saving..." : "Save & continue"}
+                {saving ? "Сохраняем..." : "Сохранить и продолжить"}
               </Button>
             </div>
           </>

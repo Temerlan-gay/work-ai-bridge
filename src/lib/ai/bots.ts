@@ -16,46 +16,52 @@ export interface AiMatchBot {
 
 export const AI_MATCH_BOTS: AiMatchBot[] = [
   {
-    id: "tech_lead",
-    name: "Tech Lead Bot",
-    role: "Strict technical matcher",
-    quality: "Checks stack fit, seniority, and delivery realism.",
-    prompt: "Prioritize exact technical skill overlap, proven delivery, and realistic timelines.",
-  },
-  {
-    id: "budget_guard",
-    name: "Budget Guard Bot",
-    role: "Cost-aware recruiter",
-    quality: "Finds the best fit inside a practical budget.",
-    prompt: "Prioritize candidates or projects where budget, rate, and scope are aligned.",
-  },
-  {
-    id: "startup_speed",
-    name: "Startup Speed Bot",
-    role: "Fast launch matcher",
-    quality: "Looks for availability, speed, and broad practical skills.",
-    prompt: "Prioritize availability, recent activity, broad full-stack skills, and fast delivery.",
+    id: "mentor_match",
+    name: "Наставник",
+    role: "Подбирает подростков и возможности по потенциалу роста",
+    quality: "Хорош для секций, кружков, начинающих ребят и гибких задач.",
+    prompt:
+      "Учитывай потенциал, мотивацию, смежные навыки, возраст, город, понятность описания и возможность развиваться.",
   },
   {
     id: "quality_first",
-    name: "Quality First Bot",
-    role: "Premium quality matcher",
-    quality: "Ranks by reviews, portfolio strength, and completion history.",
-    prompt: "Prioritize ratings, completed work, review quality, portfolio relevance, and low risk.",
+    name: "Достижения",
+    role: "Смотрит на подтвержденные результаты",
+    quality: "Выше ставит портфолио, опыт, отзывы, завершенные проекты и конкретные достижения.",
+    prompt:
+      "Приоритизируй релевантные достижения, портфолио, отзывы, опыт участия и совпадение направления.",
   },
   {
-    id: "mentor_match",
-    name: "Mentor Match Bot",
-    role: "Growth-friendly advisor",
-    quality: "Good for juniors, learning projects, and flexible clients.",
-    prompt: "Prioritize adjacent skills, growth potential, clear communication, and flexible requirements.",
+    id: "tech_lead",
+    name: "Точный матч",
+    role: "Строго проверяет совпадение навыков",
+    quality: "Подходит, когда нужен конкретный навык: футбол, рисунок, React, робототехника.",
+    prompt:
+      "Приоритизируй точное совпадение навыков, направления, роли, возраста, города и требований.",
+  },
+  {
+    id: "startup_speed",
+    name: "Быстрый старт",
+    role: "Ищет тех, кто может быстро включиться",
+    quality: "Смотрит на доступность, активность и широкий набор практических навыков.",
+    prompt:
+      "Приоритизируй доступность, недавнюю активность, готовность общаться и быстро присоединиться.",
+  },
+  {
+    id: "budget_guard",
+    name: "По условиям",
+    role: "Сверяет ожидания по оплате и формату",
+    quality: "Полезен для платных проектов, стажировок и задач с ограниченным бюджетом.",
+    prompt:
+      "Учитывай желаемое вознаграждение, бюджет, формат участия и реалистичность ожиданий.",
   },
   {
     id: "enterprise_risk",
-    name: "Enterprise Risk Bot",
-    role: "Risk and reliability matcher",
-    quality: "Looks for stability, professionalism, and suspicious-signal avoidance.",
-    prompt: "Prioritize reliability, low scam risk, clear requirements, professional history, and stable activity.",
+    name: "Надежность",
+    role: "Ищет аккуратные и безопасные совпадения",
+    quality: "Смотрит на ясность профиля, низкий риск, стабильность и адекватность условий.",
+    prompt:
+      "Приоритизируй надежность, понятные требования, низкий риск, прозрачную коммуникацию и безопасность подростка.",
   },
 ];
 

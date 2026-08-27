@@ -1,106 +1,30 @@
-import { useEffect, useState } from "react";
-import motivationWork from "@/assets/motivation-work.jpg";
-import motivationClimb from "@/assets/motivation-climb.jpg";
-import motivationRocket from "@/assets/motivation-rocket.jpg";
-import motivationCoin from "@/assets/motivation-coin.jpg";
-import motivationHighfive from "@/assets/motivation-highfive.jpg";
-import motivationPeak from "@/assets/motivation-peak.jpg";
-
-export const MOTIVATIONS = [
-  "Не время сидеть — время брать заказ 🔥",
-  "Каждый проект — шаг к свободе",
-  "Сделал работу — получил коины 💰",
-  "Лучший момент начать — сейчас",
-  "Твой следующий клиент уже ищет тебя",
-  "Дисциплина бьёт мотивацию. Но обе у тебя есть",
-  "Маленькие шаги → большие чеки",
-  "Кофе ☕, ноут 💻, погнали",
-  "Один час фокуса > один день прокрастинации",
-  "Сегодня сделай то, за что завтра скажешь спасибо",
-  "Откладываешь — теряешь. Берёшь — растёшь 🚀",
-  "Скилл качается в работе, а не в туториалах",
-  "Лучшее портфолио — то, которое обновляется",
-  "Хватит листать ленту — пора писать оффер",
-  "Если не ты — то кто-то другой возьмёт этот заказ",
-  "Каждый отклик приближает к мечте",
-  "Великие проекты начинаются с одного клика",
-  "Не идеально, но сделано > идеально, но не начато",
-  "Деньги любят действие 💸",
-  "Сегодня — лучший день стать собой получше",
-  "Фриланс — это не работа, это свобода с дедлайнами",
-  "Терпение + действие = результат",
-] as const;
-
-const IMAGES = [
-  motivationWork,
-  motivationClimb,
-  motivationRocket,
-  motivationCoin,
-  motivationHighfive,
-  motivationPeak,
-] as const;
-
-const STRIPS = [
-  "Не время сидеть — лучшие проекты разбирают первыми ✨",
-  "Один отклик в день меняет месяц 🚀",
-  "Сегодня тот самый день, который ты потом вспомнишь",
-  "Заказ сам себя не возьмёт",
-  "Кто-то прямо сейчас ищет именно тебя 👀",
-  "Маленький шаг сегодня — большой чек завтра",
-  "Хватит думать — пора делать 💪",
-  "Твой следующий уровень за одним сообщением",
-] as const;
-
-const pickedQuotes = new Set<number>();
-const pickedImages = new Set<number>();
-let pickedStrip = -1;
-
-function uniquePick(used: Set<number>, total: number) {
-  if (used.size >= total) used.clear();
-  let i = Math.floor(Math.random() * total);
-  while (used.has(i)) i = (i + 1) % total;
-  used.add(i);
-  return i;
-}
+import { Target } from "lucide-react";
 
 export function MotivationBanner() {
-  // Pick on client only — Math.random would cause SSR hydration mismatch.
-  const [pick, setPick] = useState<{ q: string; img: string } | null>(null);
-  useEffect(() => {
-    setPick({
-      q: MOTIVATIONS[uniquePick(pickedQuotes, MOTIVATIONS.length)],
-      img: IMAGES[uniquePick(pickedImages, IMAGES.length)],
-    });
-  }, []);
-  const q = pick?.q ?? "";
-  const img = pick?.img;
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="grid md:grid-cols-2 gap-0 items-center">
-        <div className="p-6 md:p-8">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Минутка мотивации</div>
-          <p className="text-xl md:text-2xl font-semibold leading-snug min-h-[2em]">{q}</p>
-          <p className="mt-3 text-sm text-muted-foreground">Открой проект, ответь клиенту, заверши задачу — и +50 WorkCoins твои.</p>
-        </div>
-        <div className="relative h-48 md:h-56 bg-muted/40">
-          {img && <img src={img} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />}
-        </div>
+    <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
+      <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+        <Target className="size-4 text-primary" />
+        Цель платформы
       </div>
+      <p className="text-xl md:text-2xl font-semibold leading-snug">
+        Помочь подросткам стать заметными: показать талант, найти наставника, попасть в команду,
+        секцию, конкурс или реальный проект.
+      </p>
+      <p className="mt-3 text-sm text-muted-foreground">
+        WorkCoins остаются внутренней валютой платформы: их можно тратить на продвижение профиля и
+        дополнительные возможности.
+      </p>
     </div>
   );
 }
 
 export function MotivationStrip() {
-  const [text, setText] = useState<string>(STRIPS[0]);
-  useEffect(() => {
-    let i = Math.floor(Math.random() * STRIPS.length);
-    if (i === pickedStrip) i = (i + 1) % STRIPS.length;
-    pickedStrip = i;
-    setText(STRIPS[i]);
-  }, []);
   return (
     <div className="rounded-xl border border-border bg-accent/30 px-4 py-3 text-sm text-center text-muted-foreground">
-      <span className="text-foreground font-medium">{text}</span>
+      <span className="text-foreground font-medium">
+        Один сильный профиль может помочь подростку получить шанс, который раньше его просто не находил.
+      </span>
     </div>
   );
 }

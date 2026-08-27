@@ -11,7 +11,7 @@ import { getAiMatchBot } from "./bots";
 
 const JsonRecord = z.record(z.unknown());
 
-const SYSTEM = `You are WorkBridge AI. You may analyze, recommend, rank, and suggest.
+const SYSTEM = `You are TalentBridge AI for a platform that helps talented teenagers become visible to mentors, clubs, teams, schools, organizers, and project owners. You may analyze, recommend, rank, and suggest.
 Never claim that you modified user data. For all generated edits, return suggestions only.
 Return compact, valid JSON only.`;
 
@@ -52,10 +52,10 @@ export const aiGenerateProjectDraft = createServerFn({ method: "POST" })
   .inputValidator(z.object({ brief: z.string().min(10).max(4000), category: z.string().optional() }))
   .handler(async ({ data, context }) => {
     const fallback = {
-      title: "New project",
+      title: "Новая возможность",
       description: data.brief,
       requirements: [],
-      timeline: "To be discussed",
+      timeline: "По договоренности",
       budgetEstimate: { min: 100, max: 500, currency: "USD" },
       skills: [],
     };
@@ -63,7 +63,7 @@ export const aiGenerateProjectDraft = createServerFn({ method: "POST" })
       context,
       "project_generator",
       "generate_project_draft",
-      `Generate a freelancer marketplace project draft from this brief. Category: ${data.category ?? "unknown"}. Brief: ${data.brief}. JSON shape: {title, description, requirements: string[], timeline, budgetEstimate:{min,max,currency}, skills:string[]}.`,
+      `Generate a TalentBridge opportunity draft for teenagers from this brief. It can be a team search, contest, school project, club, mentorship, volunteer task, internship, or paid task. Category: ${data.category ?? "unknown"}. Brief: ${data.brief}. JSON shape: {title, description, requirements: string[], timeline, budgetEstimate:{min,max,currency}, skills:string[]}.`,
       fallback,
     );
     return ProjectDraftSchema.parse(result);
@@ -73,7 +73,7 @@ export const aiProfileAdvisor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ profile: JsonRecord }))
   .handler(async ({ data, context }) => {
-    return runAi(context, "profile_advisor", "suggest_profile_improvements", `Analyze this freelancer profile and suggest improvements. Return {betterBio:string, missingSkills:string[], portfolioImprovements:string[], headline:string}. Profile: ${JSON.stringify(data.profile)}`, {
+    return runAi(context, "profile_advisor", "suggest_profile_improvements", `Analyze this teenager talent profile and suggest improvements for visibility, achievements, safety, and clarity. Return {betterBio:string, missingSkills:string[], portfolioImprovements:string[], headline:string}. Profile: ${JSON.stringify(data.profile)}`, {
       betterBio: "",
       missingSkills: [],
       portfolioImprovements: [],
@@ -112,7 +112,7 @@ export const aiPriceEstimator = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ project: JsonRecord }))
   .handler(async ({ data, context }) => {
-    return runAi(context, "price_estimator", "estimate_price_duration", `Estimate price and duration for this project using complexity and market averages. Return {minBudget:number,maxBudget:number,currency:string,minDays:number,maxDays:number,complexity:string,reasoning:string}. Project: ${JSON.stringify(data.project)}`, {
+    return runAi(context, "price_estimator", "estimate_price_duration", `Estimate fair conditions, optional reward, and duration for this TalentBridge opportunity for teenagers. Consider safety, learning value, complexity, age-appropriate scope, and market averages when payment is relevant. Return {minBudget:number,maxBudget:number,currency:string,minDays:number,maxDays:number,complexity:string,reasoning:string}. Opportunity: ${JSON.stringify(data.project)}`, {
       minBudget: 100,
       maxBudget: 500,
       currency: "USD",
@@ -156,10 +156,10 @@ export const aiFreelancerMatching = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const bot = getAiMatchBot(data.botId);
     return runAi(context, "freelancer_matching", "rank_freelancers", `You are ${bot.name}: ${bot.role}. ${bot.prompt}
-The employer describes a project and needs suitable freelancers. Rank only genuinely suitable freelancers by skills, rating, completed projects, activity, relevance, rate, and reliability.
-If no freelancer is suitable, return an empty rankings array.
+The consumer describes which teenager, skill, role, team member, performer, athlete, artist, or young specialist they need. Rank only genuinely suitable teenagers by skills, specialization, achievements, rating, completed projects, activity, relevance, availability, location, and safety.
+If no teenager is suitable, return an empty rankings array.
 Scores must be 0-100. Include only candidates with score >= 65.
-Return {rankings:[{id:string,score:number,reasons:string[]}]}. Project: ${JSON.stringify(data.project)} Freelancers: ${JSON.stringify(data.freelancers)}`, {
+Return {rankings:[{id:string,score:number,reasons:string[]}]}. Request: ${JSON.stringify(data.project)} Teenagers: ${JSON.stringify(data.freelancers)}`, {
       rankings: [],
     });
   });
@@ -175,10 +175,10 @@ export const aiProjectMatching = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const bot = getAiMatchBot(data.botId);
     return runAi(context, "project_feed", "rank_projects_for_freelancer", `You are ${bot.name}: ${bot.role}. ${bot.prompt}
-The freelancer describes their skills, budget wishes, schedule, and preferred vacancy. Rank only genuinely suitable open projects.
-If no project is suitable, return an empty rankings array.
-Scores must be 0-100. Include only projects with score >= 65.
-Return {rankings:[{id:string,score:number,reasons:string[]}]}. Freelancer request: ${data.request}. Profile: ${JSON.stringify(data.profile)} Projects: ${JSON.stringify(data.projects)}`, {
+The teenager describes their skills, age, city, goals, schedule, and preferred opportunity. Rank only genuinely suitable open opportunities.
+If no opportunity is suitable, return an empty rankings array.
+Scores must be 0-100. Include only opportunities with score >= 65.
+Return {rankings:[{id:string,score:number,reasons:string[]}]}. Teenager request: ${data.request}. Profile: ${JSON.stringify(data.profile)} Opportunities: ${JSON.stringify(data.projects)}`, {
       rankings: [],
     });
   });

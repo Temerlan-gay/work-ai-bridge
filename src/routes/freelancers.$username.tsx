@@ -1,5 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import {
+  Bot,
+  Briefcase,
+  Clock,
+  ExternalLink,
+  Github,
+  Linkedin,
+  Loader2,
+  MapPin,
+  MessageSquare,
+  Star,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
@@ -10,21 +22,28 @@ import { useAuth } from "@/hooks/use-auth";
 import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
 import { isOnline, type FreelancerRow } from "@/components/freelancer-card";
-import { Star, Briefcase, MapPin, Clock, MessageSquare, Github, Linkedin, ExternalLink, Bot, Loader2 } from "lucide-react";
 import { BoostButton } from "@/components/boost-button";
 import { aiReputationScore } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/freelancers/$username")({
   head: ({ params }) => ({
     meta: [
-      { title: `@${params.username} — WorkBridge` },
-      { name: "description", content: `Freelancer profile of @${params.username} on WorkBridge.` },
+      { title: `@${params.username} - TalentBridge` },
+      { name: "description", content: `Профиль подростка @${params.username} на TalentBridge.` },
     ],
   }),
   component: ProfilePage,
 });
 
-type Portfolio = { id: string; title: string; description: string | null; image_url: string | null; link: string | null; technologies: string[] | null; boosted_at: string | null };
+type Portfolio = {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  link: string | null;
+  technologies: string[] | null;
+  boosted_at: string | null;
+};
 type Review = { id: string; rating: number; comment: string | null; created_at: string; from_user: string };
 
 function ProfilePage() {
@@ -47,7 +66,10 @@ function ProfilePage() {
         .eq("username", username)
         .maybeSingle();
       const row = data as FreelancerRow | null;
-      if (!row || !row.id) { setNotFound(true); return; }
+      if (!row || !row.id) {
+        setNotFound(true);
+        return;
+      }
       setP(row);
       const { data: prof } = await supabase.from("profiles").select("links").eq("id", row.id).maybeSingle();
       setLinks((prof?.links as any) ?? {});
@@ -72,12 +94,20 @@ function ProfilePage() {
 
   const message = async () => {
     if (!p) return;
-    if (!user) { navigate({ to: "/login" }); return; }
-    if (user.id === p.id) { toast.info("This is your profile"); return; }
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (user.id === p.id) {
+      toast.info("Это ваш профиль");
+      return;
+    }
     try {
       const id = await openOrCreateChat(user.id, p.id);
       if (id) navigate({ to: "/chats/$id", params: { id } });
-    } catch (e: any) { toast.error(e.message ?? "Failed"); }
+    } catch (e: any) {
+      toast.error(e.message ?? "Не удалось открыть чат");
+    }
   };
 
   const loadTrustScore = async () => {
@@ -93,7 +123,7 @@ function ProfilePage() {
       });
       setTrustScore(result);
     } catch (e: any) {
-      toast.error(e.message ?? "AI reputation scoring failed");
+      toast.error(e.message ?? "AI-анализ временно недоступен");
     } finally {
       setTrustLoading(false);
     }
@@ -105,16 +135,16 @@ function ProfilePage() {
         <SiteHeader />
         <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
         <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-          <h1 className="text-2xl font-semibold">Profile not found</h1>
-          <p className="text-sm text-muted-foreground mt-2">@{username} doesn't exist.</p>
-          <Button asChild className="mt-6"><Link to="/freelancers">Browse freelancers</Link></Button>
+          <h1 className="text-2xl font-semibold">Профиль не найден</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Подростка с username @{username} пока нет.</p>
+          <Button asChild className="mt-6"><Link to="/freelancers">Смотреть каталог подростков</Link></Button>
         </div>
       </div>
     );
   }
 
   if (!p) {
-    return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   const online = isOnline(p.last_seen_at);
@@ -126,7 +156,7 @@ function ProfilePage() {
       <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row gap-6">
+          <div className="flex flex-col gap-6 sm:flex-row">
             <div className="relative shrink-0">
               <Avatar className="size-28">
                 <AvatarImage src={p.avatar_url ?? undefined} />
@@ -134,45 +164,52 @@ function ProfilePage() {
               </Avatar>
               <span
                 className={`absolute bottom-1 right-1 block size-5 rounded-full ring-4 ring-card ${online ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
-                title={online ? "Online" : "Offline"}
+                title={online ? "Онлайн" : "Офлайн"}
               />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight">{p.full_name ?? p.username}</h1>
-                  <p className="text-sm text-muted-foreground">@{p.username}{p.specialization && <span> · {p.specialization}</span>}</p>
+                  <p className="text-sm text-muted-foreground">
+                    @{p.username}{p.specialization && <span> · {p.specialization}</span>}
+                  </p>
                 </div>
-                <Button onClick={message} disabled={user?.id === p.id}>
-                  <MessageSquare className="size-4" /> Message
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {user?.id === p.id && (
+                    <BoostButton kind="profile" id={p.id} boostedAt={p.boosted_at} />
+                  )}
+                  <Button onClick={message} disabled={user?.id === p.id}>
+                    <MessageSquare className="size-4" /> Написать
+                  </Button>
+                </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {p.avg_rating > 0 && (
                   <span className="inline-flex items-center gap-1">
                     <Star className="size-4 fill-amber-400 text-amber-400" />
                     <span className="font-medium text-foreground">{p.avg_rating.toFixed(1)}</span>
-                    <span>({p.reviews_count} reviews)</span>
+                    <span>({p.reviews_count} отзывов)</span>
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1"><Briefcase className="size-4" /> {p.completed_projects} projects</span>
+                <span className="inline-flex items-center gap-1"><Briefcase className="size-4" /> {p.completed_projects} проектов</span>
                 {p.country && <span className="inline-flex items-center gap-1"><MapPin className="size-4" />{p.country}{p.city && `, ${p.city}`}</span>}
-                {p.years_experience != null && <span className="inline-flex items-center gap-1"><Clock className="size-4" />{p.years_experience}y experience</span>}
-                {p.hourly_rate != null && <span className="font-medium text-foreground">${Number(p.hourly_rate).toFixed(0)}/hr</span>}
+                {p.years_experience != null && <span className="inline-flex items-center gap-1"><Clock className="size-4" />{p.years_experience} лет практики</span>}
+                {p.hourly_rate != null && <span className="font-medium text-foreground">${Number(p.hourly_rate).toFixed(0)}/час</span>}
               </div>
               {(links.github || links.linkedin) && (
                 <div className="mt-3 flex gap-2">
                   {links.github && (
                     <Button asChild variant="outline" size="sm">
                       <a href={links.github.startsWith("http") ? links.github : `https://github.com/${links.github}`} target="_blank" rel="noopener noreferrer">
-                        <Github className="size-4" /> GitHub
+                        <Github className="size-4" /> Портфолио
                       </a>
                     </Button>
                   )}
                   {links.linkedin && (
                     <Button asChild variant="outline" size="sm">
                       <a href={links.linkedin} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="size-4" /> LinkedIn
+                        <Linkedin className="size-4" /> Ссылка
                       </a>
                     </Button>
                   )}
@@ -183,14 +220,14 @@ function ProfilePage() {
 
           {p.bio && (
             <div className="mt-6">
-              <h2 className="text-sm font-semibold mb-2">About</h2>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{p.bio}</p>
+              <h2 className="mb-2 text-sm font-semibold">О себе</h2>
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{p.bio}</p>
             </div>
           )}
 
           {p.skills && p.skills.length > 0 && (
             <div className="mt-6">
-              <h2 className="text-sm font-semibold mb-2">Skills</h2>
+              <h2 className="mb-2 text-sm font-semibold">Навыки</h2>
               <div className="flex flex-wrap gap-1.5">
                 {p.skills.map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}
               </div>
@@ -201,13 +238,15 @@ function ProfilePage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  <Bot className="size-4 text-primary" /> AI trust score
+                  <Bot className="size-4 text-primary" /> AI-анализ профиля
                 </h2>
-                <p className="text-xs text-muted-foreground">Based on reviews, completion, activity, and visible profile signals.</p>
+                <p className="text-xs text-muted-foreground">
+                  Учитывает отзывы, активность, завершенные проекты и заполненность профиля.
+                </p>
               </div>
               <Button variant="outline" size="sm" onClick={loadTrustScore} disabled={trustLoading}>
                 {trustLoading ? <Loader2 className="size-4 animate-spin" /> : <Bot className="size-4" />}
-                Analyze
+                Анализировать
               </Button>
             </div>
             {trustScore && (
@@ -217,7 +256,7 @@ function ProfilePage() {
                   <div className="text-xs text-muted-foreground">{trustScore.grade}</div>
                 </div>
                 <div className="text-sm">
-                  <div className="font-medium">Reasons</div>
+                  <div className="font-medium">Почему</div>
                   <ul className="mt-1 list-disc pl-4 text-muted-foreground">
                     {(trustScore.reasons ?? []).map((reason: string) => <li key={reason}>{reason}</li>)}
                   </ul>
@@ -229,21 +268,21 @@ function ProfilePage() {
 
         {portfolio.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-xl font-semibold tracking-tight mb-4">Portfolio</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <h2 className="mb-4 text-xl font-semibold tracking-tight">Достижения и работы</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {portfolio.map((it) => (
-                <div key={it.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                <div key={it.id} className="overflow-hidden rounded-xl border border-border bg-card">
                   {it.image_url && (
-                    <img src={it.image_url} alt={it.title} className="w-full aspect-video object-cover" loading="lazy" />
+                    <img src={it.image_url} alt={it.title} className="aspect-video w-full object-cover" loading="lazy" />
                   )}
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-medium">{it.title}</div>
-                      {it.boosted_at && Date.now() - new Date(it.boosted_at).getTime() < 7*24*60*60*1000 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-medium shrink-0">★ TOP</span>
+                      {it.boosted_at && Date.now() - new Date(it.boosted_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">★ TOP</span>
                       )}
                     </div>
-                    {it.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{it.description}</p>}
+                    {it.description && <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{it.description}</p>}
                     {it.technologies && it.technologies.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {it.technologies.slice(0, 4).map((t) => (
@@ -253,7 +292,7 @@ function ProfilePage() {
                     )}
                     {it.link && (
                       <a href={it.link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                        Visit <ExternalLink className="size-3" />
+                        Открыть <ExternalLink className="size-3" />
                       </a>
                     )}
                     {user?.id === p.id && (
@@ -270,7 +309,7 @@ function ProfilePage() {
 
         {reviews.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-xl font-semibold tracking-tight mb-4">Reviews</h2>
+            <h2 className="mb-4 text-xl font-semibold tracking-tight">Отзывы</h2>
             <div className="space-y-3">
               {reviews.map((r) => (
                 <div key={r.id} className="rounded-xl border border-border bg-card p-4">

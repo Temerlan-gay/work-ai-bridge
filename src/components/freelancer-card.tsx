@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, Star, Briefcase, MapPin, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { BoostButton } from "@/components/boost-button";
 
 export interface FreelancerRow {
   id: string;
@@ -19,6 +20,7 @@ export interface FreelancerRow {
   years_experience: number | null;
   availability: string | null;
   last_seen_at: string | null;
+  boosted_at?: string | null;
   created_at: string;
   avg_rating: number;
   reviews_count: number;
@@ -31,9 +33,9 @@ export function isOnline(lastSeen: string | null): boolean {
 }
 
 const AVAIL_LABEL: Record<string, string> = {
-  available: "Available",
-  busy: "Busy",
-  not_available: "Not available",
+  available: "Готов",
+  busy: "Занят",
+  not_available: "Не доступен",
 };
 
 const AVAIL_COLOR: Record<string, string> = {
@@ -46,9 +48,10 @@ interface Props {
   p: FreelancerRow;
   onMessage: (id: string) => void;
   selfId?: string | null;
+  onBoosted?: () => void;
 }
 
-export function FreelancerCard({ p, onMessage, selfId }: Props) {
+export function FreelancerCard({ p, onMessage, selfId, onBoosted }: Props) {
   const online = isOnline(p.last_seen_at);
   const initials = (p.full_name ?? p.username ?? "?").slice(0, 2).toUpperCase();
   const profileLink = p.username ? `/freelancers/${p.username}` : null;
@@ -68,7 +71,7 @@ export function FreelancerCard({ p, onMessage, selfId }: Props) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="font-semibold truncate">{p.full_name ?? p.username ?? "Freelancer"}</div>
+            <div className="font-semibold truncate">{p.full_name ?? p.username ?? "Подросток"}</div>
             {p.availability && (
               <Badge variant="outline" className={`text-[10px] py-0 px-1.5 border ${AVAIL_COLOR[p.availability] ?? ""}`}>
                 {AVAIL_LABEL[p.availability] ?? p.availability}
@@ -86,7 +89,7 @@ export function FreelancerCard({ p, onMessage, selfId }: Props) {
             )}
             <span className="inline-flex items-center gap-1">
               <Briefcase className="size-3" />
-              {p.completed_projects} done
+                {p.completed_projects} проектов
             </span>
             {p.country && (
               <span className="inline-flex items-center gap-1">
@@ -97,7 +100,7 @@ export function FreelancerCard({ p, onMessage, selfId }: Props) {
             {p.years_experience != null && (
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3" />
-                {p.years_experience}y exp
+                {p.years_experience} лет практики
               </span>
             )}
           </div>
@@ -124,22 +127,25 @@ export function FreelancerCard({ p, onMessage, selfId }: Props) {
           {p.hourly_rate != null ? (
             <>
               <span className="font-semibold">${Number(p.hourly_rate).toFixed(0)}</span>
-              <span className="text-muted-foreground">/hr</span>
+              <span className="text-muted-foreground">/час</span>
             </>
           ) : (
-            <span className="text-muted-foreground text-xs">Rate on request</span>
+            <span className="text-muted-foreground text-xs">Не указано</span>
           )}
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => onMessage(p.id)} disabled={selfId === p.id}>
-            <MessageSquare className="size-4" /> Message
+            <MessageSquare className="size-4" /> Написать
           </Button>
+          {selfId === p.id && (
+            <BoostButton kind="profile" id={p.id} boostedAt={p.boosted_at} onBoosted={onBoosted} />
+          )}
           {profileLink ? (
             <Button asChild size="sm">
-              <Link to="/freelancers/$username" params={{ username: p.username! }}>View</Link>
+              <Link to="/freelancers/$username" params={{ username: p.username! }}>Профиль</Link>
             </Button>
           ) : (
-            <Button size="sm" disabled>View</Button>
+            <Button size="sm" disabled>Профиль</Button>
           )}
         </div>
       </div>

@@ -9,10 +9,17 @@ import { MotivationBanner, MotivationStrip } from "@/components/motivation";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "WorkBridge — Freelance marketplace for CIS" },
-      { name: "description", content: "Hire trusted freelancers across CIS. Lower fees, secure payments, AI-powered project briefs." },
-      { property: "og:title", content: "WorkBridge — Freelance marketplace" },
-      { property: "og:description", content: "Connect freelancers and clients across CIS countries." },
+      { title: "TalentBridge - платформа для талантливых школьников" },
+      {
+        name: "description",
+        content:
+          "TalentBridge помогает школьникам показать таланты, найти наставников, команды, секции, проекты и первые возможности.",
+      },
+      { property: "og:title", content: "TalentBridge - школьные таланты без невидимости" },
+      {
+        property: "og:description",
+        content: "Каталог талантов, направлений и возможностей для школьников.",
+      },
     ],
   }),
   component: Landing,
@@ -23,24 +30,25 @@ function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main>
-        {/* Hero */}
         <section className="mx-auto max-w-6xl px-4 pt-16 pb-20 md:pt-24 md:pb-28 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-6">
-            <Sparkles className="size-3" /> Built for the CIS market
+            <Sparkles className="size-3" /> Кейс 1: заметить талант каждого школьника
           </div>
           <h1 className="text-4xl md:text-6xl font-semibold tracking-tight max-w-3xl mx-auto">
-            The freelance marketplace<br /> built on <span className="text-primary">trust</span>
+            Платформа, где школьные <span className="text-primary">таланты</span> становятся видимыми
           </h1>
-          <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto">
-            Lower fees, secure payments, and a reputation system that actually means something.
-            Hire developers, designers, marketers and more.
+          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
+            Футболисты, художники, программисты, музыканты, исследователи и ребята из десятков
+            других сфер могут собрать профиль, показать достижения и найти подходящие возможности.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button size="lg" asChild>
-              <Link to="/register">Get started <ArrowRight className="size-4" /></Link>
+              <Link to="/register">
+                Создать профиль <ArrowRight className="size-4" />
+              </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/projects">Browse projects</Link>
+              <Link to="/freelancers">Смотреть таланты</Link>
             </Button>
           </div>
           <div className="mt-10 max-w-2xl mx-auto">
@@ -48,14 +56,12 @@ function Landing() {
           </div>
         </section>
 
-        {/* Motivation */}
         <section className="mx-auto max-w-6xl px-4 pb-16">
           <MotivationBanner />
         </section>
 
-        {/* Categories */}
         <section className="mx-auto max-w-6xl px-4 pb-20">
-          <h2 className="text-2xl font-semibold tracking-tight mb-6">Explore by category</h2>
+          <h2 className="text-2xl font-semibold tracking-tight mb-6">Сферы талантов</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {CATEGORIES.map((c) => {
               const Icon = getCategoryIcon(c);
@@ -75,11 +81,22 @@ function Landing() {
           </div>
         </section>
 
-        {/* Features */}
         <section className="mx-auto max-w-6xl px-4 pb-24 grid md:grid-cols-3 gap-4">
-          <Feature icon={<Shield className="size-5" />} title="Secure payments" desc="Funds held in escrow until the work is approved." />
-          <Feature icon={<Star className="size-5" />} title="Reputation that matters" desc="Verified reviews, completed-project counts, response times." />
-          <Feature icon={<Sparkles className="size-5" />} title="AI project briefs" desc="Describe your idea and get a clear, detailed brief in seconds." />
+          <Feature
+            icon={<Shield className="size-5" />}
+            title="Профиль достижений"
+            desc="Школьник показывает направление, навыки, практику, город и портфолио."
+          />
+          <Feature
+            icon={<Star className="size-5" />}
+            title="Навигация по возможностям"
+            desc="Секции, проекты, конкурсы, команды и наставники собираются в одном месте."
+          />
+          <Feature
+            icon={<Sparkles className="size-5" />}
+            title="AI-подбор"
+            desc="Платформа помогает сопоставить талант школьника с подходящими заданиями и людьми."
+          />
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-24">
@@ -87,7 +104,7 @@ function Landing() {
         </section>
       </main>
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} WorkBridge
+        © {new Date().getFullYear()} TalentBridge
       </footer>
     </div>
   );
@@ -97,9 +114,7 @@ function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; 
   return (
     <div className="group rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] hover:border-primary/20">
       <div className="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/15 group-hover:scale-110">
-        <span className="transition-all duration-300 group-hover:brightness-125">
-          {icon}
-        </span>
+        <span className="transition-all duration-300 group-hover:brightness-125">{icon}</span>
       </div>
       <div className="font-medium mb-1">{title}</div>
       <div className="text-sm text-muted-foreground">{desc}</div>

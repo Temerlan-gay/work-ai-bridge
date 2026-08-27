@@ -9,7 +9,7 @@ import { BackButton } from "@/components/back-button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Reset password — WorkBridge" }] }),
+  head: () => ({ meta: [{ title: "Восстановление пароля - TalentBridge" }] }),
   component: ForgotPage,
 });
 
@@ -25,7 +25,7 @@ function ForgotPage() {
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success("Check your email for the reset link.");
+    else toast.success("Проверьте почту: мы отправили ссылку для восстановления.");
   };
 
   return (
@@ -34,17 +34,19 @@ function ForgotPage() {
       <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
       <main className="flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Forgot password</h1>
-          <p className="text-sm text-muted-foreground mb-6">We'll send you a reset link.</p>
+          <h1 className="mb-1 text-2xl font-semibold tracking-tight">Забыли пароль?</h1>
+          <p className="mb-6 text-sm text-muted-foreground">Мы отправим ссылку для восстановления.</p>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Sending..." : "Send reset link"}</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Отправляем..." : "Отправить ссылку"}
+            </Button>
           </form>
-          <p className="mt-6 text-sm text-muted-foreground text-center">
-            <Link to="/login" className="hover:text-foreground">Back to log in</Link>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            <Link to="/login" className="hover:text-foreground">Вернуться ко входу</Link>
           </p>
         </div>
       </main>

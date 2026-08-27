@@ -14,12 +14,12 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 px-2 py-1 rounded-md transition-all duration-200 hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">
           <div className="size-7 rounded-md bg-primary" />
-          <span className="font-semibold tracking-tight">WorkBridge</span>
+          <span className="font-semibold tracking-tight">TalentBridge</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-          <Link to="/projects" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Projects</Link>
-          <Link to="/freelancers" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Freelancers</Link>
-          {user && <Link to="/chats" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Chats</Link>}
+          <Link to="/projects" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Возможности</Link>
+          <Link to="/freelancers" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Таланты</Link>
+          {user && <Link to="/chats" className="px-3 py-1.5 rounded-md transition-all duration-200 hover:text-foreground hover:shadow-[0_6px_20px_-8px_color-mix(in_oklab,var(--foreground)_22%,transparent)]">Чаты</Link>}
         </nav>
         <div className="flex min-w-0 items-center gap-2">
           <WorkCoinBalance />
@@ -41,7 +41,7 @@ export function SiteHeader() {
                 <Settings className="size-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
-                <LayoutDashboard className="size-4" /> Dashboard
+                <LayoutDashboard className="size-4" /> Кабинет
               </Button>
               <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate({ to: "/" }); }} aria-label="Sign out">
                 <LogOut className="size-4" />
@@ -49,8 +49,8 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>Log in</Button>
-              <Button size="sm" onClick={() => navigate({ to: "/register" })}>Sign up</Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>Войти</Button>
+              <Button size="sm" onClick={() => navigate({ to: "/register" })}>Регистрация</Button>
             </>
           )}
         </div>

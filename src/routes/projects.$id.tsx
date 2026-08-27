@@ -1,24 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SiteHeader } from "@/components/site-header";
 import { BackButton } from "@/components/back-button";
-import { Button } from "@/components/ui/button";
 import { BoostButton } from "@/components/boost-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { openOrCreateChat } from "@/lib/open-chat";
-import { MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects/$id")({
-  head: () => ({ meta: [{ title: "Project — WorkBridge" }] }),
-  component: ProjectDetail,
+  head: () => ({ meta: [{ title: "Возможность - TalentBridge" }] }),
+  component: OpportunityDetail,
 });
 
-function ProjectDetail() {
+function OpportunityDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,69 +27,102 @@ function ProjectDetail() {
   const [price, setPrice] = useState("");
   const [days, setDays] = useState("7");
 
-  useEffect(() => {
-    supabase.from("projects").select("*").eq("id", id).maybeSingle().then(({ data }) => setProject(data));
-  }, [id]);
-
-  const submit = async () => {
-    if (!user) { navigate({ to: "/login" }); return; }
-    const { error } = await supabase.from("proposals").insert({
-      project_id: id, freelancer_id: user.id, cover_letter: cover,
-      price: Number(price), delivery_days: Number(days),
-    });
-    if (error) toast.error(error.message);
-    else toast.success("Proposal sent");
-  };
-
-  const messageClient = async () => {
-    if (!user) { navigate({ to: "/login" }); return; }
-    if (!project?.client_id || user.id === project.client_id) return;
-    try {
-      const chatId = await openOrCreateChat(user.id, project.client_id);
-      if (chatId) navigate({ to: "/chats/$id", params: { id: chatId } });
-    } catch (e: any) { toast.error(e.message ?? "Failed to open chat"); }
-  };
-
   const reload = () => {
     supabase.from("projects").select("*").eq("id", id).maybeSingle().then(({ data }) => setProject(data));
   };
 
-  if (!project) return <div className="min-h-screen bg-background"><SiteHeader /><div className="p-8 text-muted-foreground">Loading…</div></div>;
+  useEffect(() => {
+    reload();
+  }, [id]);
+
+  const submit = async () => {
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    const { error } = await supabase.from("proposals").insert({
+      project_id: id,
+      freelancer_id: user.id,
+      cover_letter: cover,
+      price: Number(price),
+      delivery_days: Number(days),
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Заявка отправлена");
+  };
+
+  const messageOrganizer = async () => {
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (!project?.client_id || user.id === project.client_id) return;
+    try {
+      const chatId = await openOrCreateChat(user.id, project.client_id);
+      if (chatId) navigate({ to: "/chats/$id", params: { id: chatId } });
+    } catch (e: any) {
+      toast.error(e.message ?? "Не удалось открыть чат");
+    }
+  };
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="p-8 text-muted-foreground">Загрузка...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <div className="mx-auto max-w-6xl px-4 pt-4"><BackButton /></div>
-      <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         <div className="text-xs text-muted-foreground">{project.category}</div>
         <h1 className="text-3xl font-semibold tracking-tight">{project.title}</h1>
-        <div className="text-sm text-muted-foreground">Budget: <span className="text-foreground font-medium">${project.budget ?? 0}</span> · Deadline: {project.deadline ?? "—"}</div>
+        <div className="text-sm text-muted-foreground">
+          Условия:{" "}
+          <span className="font-medium text-foreground">
+            {project.budget ? `$${project.budget}` : "без оплаты / по договоренности"}
+          </span>{" "}
+          · До: {project.deadline ?? "не указано"}
+        </div>
         <p className="whitespace-pre-wrap text-foreground/90">{project.description}</p>
 
         {user && user.id !== project.client_id && (
-          <Button variant="outline" onClick={messageClient}>
-            <MessageSquare className="size-4" /> Message client
+          <Button variant="outline" onClick={messageOrganizer}>
+            <MessageSquare className="size-4" /> Написать организатору
           </Button>
         )}
 
         {user && user.id === project.client_id && (
           <div className="flex items-center gap-3">
             <BoostButton kind="project" id={project.id} boostedAt={project.boosted_at} onBoosted={reload} />
-            {project.boosted_at && Date.now() - new Date(project.boosted_at).getTime() < 7*24*60*60*1000 && (
+            {project.boosted_at && Date.now() - new Date(project.boosted_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
               <span className="text-xs text-muted-foreground">В топе с {new Date(project.boosted_at).toLocaleDateString()}</span>
             )}
           </div>
         )}
 
         {user && user.id !== project.client_id && project.status === "open" && (
-          <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">Send a proposal</h2>
-            <div className="space-y-1.5"><Label>Cover letter</Label><Textarea rows={4} value={cover} onChange={(e) => setCover(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Your price ($)</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Delivery (days)</Label><Input type="number" value={days} onChange={(e) => setDays(e.target.value)} /></div>
+          <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+            <h2 className="font-semibold">Отправить заявку на участие</h2>
+            <div className="space-y-1.5">
+              <Label>Почему вы подходите</Label>
+              <Textarea rows={4} value={cover} onChange={(e) => setCover(e.target.value)} />
             </div>
-            <Button onClick={submit}>Send proposal</Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Ожидаемые условия ($)</Label>
+                <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Срок участия, дней</Label>
+                <Input type="number" value={days} onChange={(e) => setDays(e.target.value)} />
+              </div>
+            </div>
+            <Button onClick={submit}>Отправить заявку</Button>
           </section>
         )}
       </main>

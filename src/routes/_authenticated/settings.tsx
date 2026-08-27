@@ -1,15 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { SiteHeader } from "@/components/site-header";
+import { Bot, Loader2, Sparkles } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -17,14 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SiteHeader } from "@/components/site-header";
 import { SkillMultiSelect } from "@/components/skill-multi-select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { aiProfileAdvisor, aiResumeAssistant } from "@/lib/ai/functions";
 import { AVAILABILITY_OPTIONS, COUNTRIES, SPECIALIZATIONS } from "@/lib/categories";
 import { toast } from "sonner";
-import { Bot, Loader2, Sparkles } from "lucide-react";
-import { aiProfileAdvisor, aiResumeAssistant } from "@/lib/ai/functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Настройки - WorkBridge" }] }),
+  head: () => ({ meta: [{ title: "Настройки - TalentBridge" }] }),
   component: SettingsPage,
 });
 
@@ -40,7 +40,6 @@ function SettingsPage() {
   const { user } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-
   const [kind, setKind] = useState<UserKind>("freelancer");
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -48,7 +47,7 @@ function SettingsPage() {
   const [country, setCountry] = useState("Russia");
   const [city, setCity] = useState("");
   const [age, setAge] = useState("");
-  const [specializationChoice, setSpecializationChoice] = useState("Fullstack Developer");
+  const [specializationChoice, setSpecializationChoice] = useState("Футболист");
   const [specializationOther, setSpecializationOther] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [yearsExp, setYearsExp] = useState("");
@@ -57,11 +56,9 @@ function SettingsPage() {
   const [bio, setBio] = useState("");
   const [github, setGithub] = useState("");
   const [linkedin, setLinkedin] = useState("");
-
   const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
-
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profileForAi, setProfileForAi] = useState<any>(null);
@@ -74,7 +71,6 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!user) return;
-
     setCurrentEmail(user.email ?? "");
     setLoadingProfile(true);
     supabase
@@ -90,7 +86,7 @@ function SettingsPage() {
         }
 
         const links = (data?.links ?? {}) as Links;
-        const specialization = data?.specialization ?? "Fullstack Developer";
+        const specialization = data?.specialization ?? "Футболист";
 
         setKind((data?.kind ?? "freelancer") as UserKind);
         setFullName(data?.full_name ?? "");
@@ -100,7 +96,7 @@ function SettingsPage() {
         setCity(data?.city ?? "");
         setAge(data?.age ? String(data.age) : "");
         setSpecializationChoice(
-          SPECIALIZATIONS.includes(specialization as any) ? specialization : "Other",
+          SPECIALIZATIONS.includes(specialization as any) ? specialization : "Другое",
         );
         setSpecializationOther(
           SPECIALIZATIONS.includes(specialization as any) ? "" : specialization,
@@ -120,7 +116,7 @@ function SettingsPage() {
   const currentProfilePayload = () => {
     const cleanedUsername = normalizeUsername(username);
     const specialization =
-      specializationChoice === "Other" ? specializationOther.trim() : specializationChoice;
+      specializationChoice === "Другое" ? specializationOther.trim() : specializationChoice;
 
     return {
       id: user!.id,
@@ -144,22 +140,21 @@ function SettingsPage() {
 
   const saveProfile = async () => {
     if (!user) return;
-
     const cleanedUsername = normalizeUsername(username);
     if (cleanedUsername && cleanedUsername.length < 3) {
-      toast.error("Username должен содержать минимум 3 символа");
+      toast.error("Username должен содержать минимум 3 символа.");
       return;
     }
-    if (age && (Number(age) < 14 || Number(age) > 120)) {
-      toast.error("Возраст должен быть от 14 до 120");
+    if (age && (Number(age) < 7 || Number(age) > 25)) {
+      toast.error("Возраст подростка должен быть от 7 до 25 лет.");
       return;
     }
     if (yearsExp && Number(yearsExp) < 0) {
-      toast.error("Опыт не может быть отрицательным");
+      toast.error("Опыт не может быть отрицательным.");
       return;
     }
     if (hourlyRate && Number(hourlyRate) < 0) {
-      toast.error("Ставка не может быть отрицательной");
+      toast.error("Вознаграждение не может быть отрицательным.");
       return;
     }
 
@@ -173,37 +168,34 @@ function SettingsPage() {
     setSavingProfile(false);
 
     if (error) {
-      if (error.code === "23505") toast.error("Этот nickname или username уже занят");
+      if (error.code === "23505") toast.error("Такой nickname или username уже занят.");
       else toast.error(error.message);
       return;
     }
 
     setUsername(cleanedUsername ?? "");
     setProfileForAi(data);
-    toast.success("Настройки сохранены");
+    toast.success("Профиль сохранен");
   };
 
-  const updateAvatarUrl = async (
-    nextAvatarUrl: string | null,
-  ): Promise<{ data: any; error: { message: string } | null }> => {
+  const updateAvatarUrl = async (nextAvatarUrl: string | null) => {
     if (!user) return { data: null, error: null };
-    const { data, error } = await supabase
+    return supabase
       .from("profiles")
       .upsert({ ...currentProfilePayload(), avatar_url: nextAvatarUrl }, { onConflict: "id" })
       .select("*")
       .single();
-    return { data, error };
   };
 
   const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Можно загружать только изображения");
+      toast.error("Можно загружать только изображения.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Размер файла не должен превышать 5 МБ");
+      toast.error("Размер файла не должен превышать 5 МБ.");
       return;
     }
 
@@ -255,7 +247,7 @@ function SettingsPage() {
   const changeEmail = async () => {
     const email = newEmail.trim();
     if (!email || email === currentEmail) {
-      toast.error("Введите новый email");
+      toast.error("Введите новый email.");
       return;
     }
 
@@ -268,13 +260,13 @@ function SettingsPage() {
       return;
     }
 
-    toast.success("Письмо для подтверждения отправлено на новый email");
+    toast.success("Письмо для подтверждения отправлено на новый email.");
     setNewEmail("");
   };
 
   const getProfileAdvice = async () => {
     if (!profileForAi) {
-      toast.info("Сначала сохраните профиль");
+      toast.info("Сначала сохраните профиль.");
       return;
     }
 
@@ -283,7 +275,7 @@ function SettingsPage() {
       const result = await aiProfileAdvisor({ data: { profile: profileForAi } });
       setAiAdvice(result);
     } catch (e: any) {
-      toast.error(e.message ?? "AI profile advisor failed");
+      toast.error(e.message ?? "AI-помощник временно недоступен");
     } finally {
       setAiLoading(false);
     }
@@ -297,7 +289,7 @@ function SettingsPage() {
 
   const analyzeResume = async () => {
     if (resumeText.trim().length < 20) {
-      toast.error("Вставьте текст резюме или выберите текстовый файл");
+      toast.error("Вставьте текст анкеты, резюме или выберите текстовый файл.");
       return;
     }
 
@@ -306,7 +298,7 @@ function SettingsPage() {
       const result = await aiResumeAssistant({ data: { resumeText } });
       setResumeAdvice(result);
     } catch (e: any) {
-      toast.error(e.message ?? "AI resume assistant failed");
+      toast.error(e.message ?? "AI-анализ временно недоступен");
     } finally {
       setResumeLoading(false);
     }
@@ -318,11 +310,11 @@ function SettingsPage() {
       <div className="mx-auto max-w-6xl px-4 pt-4">
         <BackButton />
       </div>
-      <main className="mx-auto max-w-3xl px-4 py-10 space-y-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-10">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Настройки</h1>
           <p className="text-sm text-muted-foreground">
-            Управляйте профилем, фото, навыками и привязанной почтой.
+            Управляйте профилем, фото, навыками, email и AI-подсказками.
           </p>
         </div>
 
@@ -330,7 +322,7 @@ function SettingsPage() {
           <CardHeader>
             <CardTitle>Профиль</CardTitle>
             <CardDescription>
-              Эти данные видят клиенты и фрилансеры на страницах каталога и проектов.
+              Эти данные видят подростки, потребители, наставники и организаторы возможностей.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -345,21 +337,17 @@ function SettingsPage() {
                   <div className="space-y-1.5">
                     <Label>Роль</Label>
                     <Select value={kind} onValueChange={(value) => setKind(value as UserKind)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="freelancer">Фрилансер</SelectItem>
-                        <SelectItem value="client">Клиент</SelectItem>
+                        <SelectItem value="freelancer">Подросток</SelectItem>
+                        <SelectItem value="client">Потребитель</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Доступность</Label>
+                    <Label>Статус</Label>
                     <Select value={availability} onValueChange={setAvailability}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {AVAILABILITY_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
@@ -378,12 +366,7 @@ function SettingsPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Никнейм</Label>
-                    <Input
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      maxLength={50}
-                      placeholder="Ваш отображаемый никнейм"
-                    />
+                    <Input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={50} />
                   </div>
                 </div>
 
@@ -394,7 +377,7 @@ function SettingsPage() {
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
                     minLength={3}
                     maxLength={30}
-                    placeholder="johndoe"
+                    placeholder="ivan_football"
                   />
                   <p className="text-xs text-muted-foreground">
                     Только латинские буквы, цифры, _ и -. От 3 до 30 символов.
@@ -405,9 +388,7 @@ function SettingsPage() {
                   <div className="space-y-1.5">
                     <Label>Страна</Label>
                     <Select value={country} onValueChange={setCountry}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {COUNTRIES.map((item) => (
                           <SelectItem key={item} value={item}>
@@ -423,59 +404,38 @@ function SettingsPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Возраст</Label>
-                    <Input
-                      type="number"
-                      min={14}
-                      max={120}
-                      value={age}
-                      onChange={(e) => setAge(e.target.value)}
-                    />
+                    <Input type="number" min={7} max={25} value={age} onChange={(e) => setAge(e.target.value)} />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Специализация</Label>
+                  <Label>Направление / профессия</Label>
                   <Select value={specializationChoice} onValueChange={setSpecializationChoice}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {SPECIALIZATIONS.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
+                        <SelectItem key={item} value={item}>{item}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {specializationChoice === "Other" && (
+                  {specializationChoice === "Другое" && (
                     <Input
                       className="mt-2"
                       value={specializationOther}
                       onChange={(e) => setSpecializationOther(e.target.value)}
-                      placeholder="Введите специализацию"
+                      placeholder="Введите свое направление"
                     />
                   )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label>Опыт, лет</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={60}
-                      value={yearsExp}
-                      onChange={(e) => setYearsExp(e.target.value)}
-                    />
+                    <Label>Лет практики</Label>
+                    <Input type="number" min={0} max={20} value={yearsExp} onChange={(e) => setYearsExp(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Ставка в час, USD</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={hourlyRate}
-                      onChange={(e) => setHourlyRate(e.target.value)}
-                    />
+                    <Label>Желаемое вознаграждение, USD</Label>
+                    <Input type="number" min={0} value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
                   </div>
                 </div>
 
@@ -485,17 +445,17 @@ function SettingsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>О себе</Label>
+                  <Label>О себе и достижениях</Label>
                   <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label>GitHub</Label>
+                    <Label>Портфолио / GitHub</Label>
                     <Input value={github} onChange={(e) => setGithub(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>LinkedIn</Label>
+                    <Label>Соцсеть / резюме</Label>
                     <Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
                   </div>
                 </div>
@@ -519,18 +479,10 @@ function SettingsPage() {
             <div className="flex items-center gap-4">
               <Avatar className="size-20">
                 <AvatarImage src={avatarUrl ?? undefined} alt={fullName || "avatar"} />
-                <AvatarFallback>
-                  {(fullName || nickname || currentEmail || "?").slice(0, 2).toUpperCase()}
-                </AvatarFallback>
+                <AvatarFallback>{(fullName || nickname || currentEmail || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="flex flex-wrap gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={onAvatarChange}
-                />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
                 <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
                   {uploadingAvatar ? "Загрузка..." : avatarUrl ? "Изменить фото" : "Загрузить фото"}
                 </Button>
@@ -547,9 +499,7 @@ function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Email</CardTitle>
-            <CardDescription>
-              На новый адрес придет письмо для подтверждения смены почты.
-            </CardDescription>
+            <CardDescription>На новый адрес придет письмо для подтверждения смены почты.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
@@ -558,12 +508,7 @@ function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Новый email</Label>
-              <Input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="new@example.com"
-              />
+              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" />
             </div>
             <div className="flex justify-end">
               <Button onClick={changeEmail} disabled={savingEmail || !newEmail.trim()}>
@@ -576,45 +521,35 @@ function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bot className="size-4 text-primary" /> AI Profile Advisor
+              <Bot className="size-4 text-primary" /> AI-помощник профиля
             </CardTitle>
             <CardDescription>
-              AI подскажет, как улучшить позиционирование, навыки и портфолио.
+              AI подскажет, как лучше описать талант, достижения, навыки и портфолио.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button variant="outline" onClick={getProfileAdvice} disabled={aiLoading || !profileForAi}>
               {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              Analyze profile
+              Проанализировать профиль
             </Button>
             {aiAdvice && (
               <div className="space-y-3 text-sm">
                 {aiAdvice.headline && (
                   <div className="rounded-md border border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground">Suggested headline</div>
+                    <div className="text-xs font-medium text-muted-foreground">Заголовок</div>
                     <p className="mt-1">{aiAdvice.headline}</p>
                   </div>
                 )}
                 {aiAdvice.betterBio && (
                   <div className="rounded-md border border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground">Better bio</div>
+                    <div className="text-xs font-medium text-muted-foreground">Улучшенное описание</div>
                     <p className="mt-1 whitespace-pre-wrap">{aiAdvice.betterBio}</p>
                   </div>
                 )}
                 {aiAdvice.missingSkills?.length > 0 && (
                   <div className="rounded-md border border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground">Missing skills</div>
+                    <div className="text-xs font-medium text-muted-foreground">Что добавить</div>
                     <p className="mt-1">{aiAdvice.missingSkills.join(", ")}</p>
-                  </div>
-                )}
-                {aiAdvice.portfolioImprovements?.length > 0 && (
-                  <div className="rounded-md border border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground">Portfolio improvements</div>
-                    <ul className="mt-1 list-disc space-y-1 pl-4">
-                      {aiAdvice.portfolioImprovements.map((item: string) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
                   </div>
                 )}
               </div>
@@ -625,49 +560,41 @@ function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bot className="size-4 text-primary" /> AI Resume Assistant
+              <Bot className="size-4 text-primary" /> AI-анализ анкеты
             </CardTitle>
             <CardDescription>
-              Проверьте текст резюме. Файлы не загружаются и не сохраняются автоматически.
+              Проверьте текст анкеты, резюме или описания достижений. Файл не сохраняется автоматически.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input
-              type="file"
-              accept=".txt,.md,.csv,.json"
-              onChange={(e) => readResumeFile(e.target.files?.[0])}
-            />
+            <Input type="file" accept=".txt,.md,.csv,.json" onChange={(e) => readResumeFile(e.target.files?.[0])} />
             <Textarea
               rows={6}
               value={resumeText}
               onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Вставьте текст резюме..."
+              placeholder="Вставьте текст анкеты, достижений или резюме..."
             />
             <Button variant="outline" onClick={analyzeResume} disabled={resumeLoading}>
               {resumeLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              Analyze resume
+              Проанализировать
             </Button>
             {resumeAdvice && (
               <div className="space-y-3 text-sm">
                 <div className="rounded-md border border-border p-3">
-                  <div className="text-xs font-medium text-muted-foreground">Weaknesses</div>
+                  <div className="text-xs font-medium text-muted-foreground">Слабые места</div>
                   <ul className="mt-1 list-disc space-y-1 pl-4">
-                    {(resumeAdvice.weaknesses ?? []).map((item: string) => (
-                      <li key={item}>{item}</li>
-                    ))}
+                    {(resumeAdvice.weaknesses ?? []).map((item: string) => <li key={item}>{item}</li>)}
                   </ul>
                 </div>
                 <div className="rounded-md border border-border p-3">
-                  <div className="text-xs font-medium text-muted-foreground">Suggested improvements</div>
+                  <div className="text-xs font-medium text-muted-foreground">Как улучшить</div>
                   <ul className="mt-1 list-disc space-y-1 pl-4">
-                    {(resumeAdvice.improvements ?? []).map((item: string) => (
-                      <li key={item}>{item}</li>
-                    ))}
+                    {(resumeAdvice.improvements ?? []).map((item: string) => <li key={item}>{item}</li>)}
                   </ul>
                 </div>
                 {resumeAdvice.rewrittenSummary && (
                   <div className="rounded-md border border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground">Rewritten summary</div>
+                    <div className="text-xs font-medium text-muted-foreground">Новый вариант</div>
                     <p className="mt-1 whitespace-pre-wrap">{resumeAdvice.rewrittenSummary}</p>
                   </div>
                 )}

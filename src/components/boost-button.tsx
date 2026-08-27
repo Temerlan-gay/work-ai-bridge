@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 type Props = {
-  kind: "project" | "portfolio";
+  kind: "project" | "portfolio" | "profile";
   id: string;
   boostedAt?: string | null;
   onBoosted?: () => void;

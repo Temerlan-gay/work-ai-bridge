@@ -8,13 +8,21 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getFriendlyAuthError } from "@/lib/auth-errors";
+import { CATEGORIES, SPECIALIZATIONS } from "@/lib/categories";
 import { signInWithGoogle } from "@/lib/supabase-oauth";
 
 export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Sign up - WorkBridge" }] }),
+  head: () => ({ meta: [{ title: "Регистрация - TalentBridge" }] }),
   component: RegisterPage,
 });
 
@@ -24,6 +32,8 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [talentCategory, setTalentCategory] = useState<string>("Футбол");
+  const [specialization, setSpecialization] = useState<string>("Футболист");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -85,7 +95,7 @@ function RegisterPage() {
         email: email.trim().toLowerCase(),
         password,
         options: {
-          data: { full_name: fullName },
+          data: { full_name: fullName, talent_category: talentCategory, specialization },
           emailRedirectTo: `${window.location.origin}/onboarding`,
         },
       });
@@ -134,9 +144,9 @@ function RegisterPage() {
       </div>
       <main className="flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Create an account</h1>
+          <h1 className="text-2xl font-semibold tracking-tight mb-1">Создать профиль</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Join WorkBridge as a freelancer or a client
+            Расскажите, в какой сфере у вас талант, чтобы наставники и проекты могли вас найти.
           </p>
 
           <Button
@@ -145,10 +155,10 @@ function RegisterPage() {
             onClick={google}
             disabled={googleLoading || loading}
           >
-            {googleLoading ? "Redirecting..." : "Continue with Google"}
+            {googleLoading ? "Переходим..." : "Продолжить с Google"}
           </Button>
           <div className="flex items-center gap-3 my-4 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+            <div className="h-px flex-1 bg-border" /> или <div className="h-px flex-1 bg-border" />
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
@@ -171,17 +181,50 @@ function RegisterPage() {
                 className="hidden"
                 onChange={(event) => onPickAvatar(event.target.files?.[0] ?? null)}
               />
-              <span className="text-xs text-muted-foreground">Upload profile photo (optional)</span>
+              <span className="text-xs text-muted-foreground">Фото профиля (необязательно)</span>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="fullName">Full name</Label>
+              <Label htmlFor="fullName">Имя и фамилия</Label>
               <Input
                 id="fullName"
                 required
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Сфера таланта</Label>
+                <Select value={talentCategory} onValueChange={setTalentCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Роль / профессия</Label>
+                <Select value={specialization} onValueChange={setSpecialization}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPECIALIZATIONS.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -196,7 +239,7 @@ function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Пароль</Label>
               <Input
                 id="password"
                 type="password"
@@ -208,14 +251,14 @@ function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating..." : "Sign up"}
+              {loading ? "Создаем..." : "Зарегистрироваться"}
             </Button>
           </form>
 
           <p className="mt-6 text-sm text-muted-foreground text-center">
-            Already have an account?{" "}
+            Уже есть аккаунт?{" "}
             <Link to="/login" className="text-primary hover:underline">
-              Sign in
+              Войти
             </Link>
           </p>
         </div>
