@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Star, Briefcase, MapPin, Clock } from "lucide-react";
+import { MessageSquare, Star, Briefcase, MapPin, Clock, Cake } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { BoostButton } from "@/components/boost-button";
 
@@ -14,6 +14,8 @@ export interface FreelancerRow {
   bio: string | null;
   country: string | null;
   city: string | null;
+  age?: number | null;
+  gender?: string | null;
   specialization: string | null;
   skills: string[] | null;
   hourly_rate: number | null;
@@ -42,6 +44,12 @@ const AVAIL_COLOR: Record<string, string> = {
   available: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
   busy: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
   not_available: "bg-muted text-muted-foreground border-border",
+};
+
+const GENDER_LABEL: Record<string, string> = {
+  boy: "Мальчик",
+  girl: "Девочка",
+  any: "Любой",
 };
 
 interface Props {
@@ -80,6 +88,14 @@ export function FreelancerCard({ p, onMessage, selfId, onBoosted }: Props) {
           </div>
           {p.username && <div className="text-xs text-muted-foreground">@{p.username}</div>}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {p.specialization && <span>{p.specialization}</span>}
+            {p.age != null && (
+              <span className="inline-flex items-center gap-1">
+                <Cake className="size-3" />
+                {p.age} лет
+              </span>
+            )}
+            {p.gender && GENDER_LABEL[p.gender] && <span>{GENDER_LABEL[p.gender]}</span>}
             {p.avg_rating > 0 && (
               <span className="inline-flex items-center gap-1">
                 <Star className="size-3 fill-amber-400 text-amber-400" />
@@ -94,7 +110,7 @@ export function FreelancerCard({ p, onMessage, selfId, onBoosted }: Props) {
             {p.country && (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3" />
-                {p.country}
+                {[p.city, p.country].filter(Boolean).join(", ")}
               </span>
             )}
             {p.years_experience != null && (

@@ -1,4 +1,10 @@
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS boosted_at timestamptz;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gender text;
+ALTER TABLE public.profiles
+  DROP CONSTRAINT IF EXISTS profiles_gender_check;
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_gender_check
+  CHECK (gender IS NULL OR gender IN ('boy', 'girl', 'other'));
 CREATE INDEX IF NOT EXISTS profiles_boosted_at_idx ON public.profiles (boosted_at DESC NULLS LAST);
 
 CREATE TABLE IF NOT EXISTS public.workcoin_prices (
@@ -39,6 +45,8 @@ SELECT
   p.bio,
   p.country,
   p.city,
+  p.age,
+  p.gender,
   p.specialization,
   p.skills,
   p.hourly_rate,
