@@ -67,33 +67,124 @@ function Onboarding() {
       });
   }, [user, navigate]);
 
+  const getSpecialization = () =>
+    specializationChoice === "Другое" ? specializationOther.trim() : specializationChoice;
+
+  const getSkills = () =>
+    selectedSkills.length
+      ? selectedSkills
+      : skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+  const validateStep = (targetStep: number) => {
+    if (targetStep >= 2) {
+      if (!kind) {
+        toast.error("Выберите роль на платформе.");
+        return false;
+      }
+    }
+
+    if (targetStep >= 3) {
+      if (!fullName.trim()) {
+        toast.error("Заполните имя и фамилию.");
+        return false;
+      }
+      if (!nickname.trim()) {
+        toast.error("Заполните никнейм.");
+        return false;
+      }
+      if (!username.trim() || username.trim().length < 3) {
+        toast.error("Уникальное имя профиля должно быть минимум 3 символа.");
+        return false;
+      }
+      if (!country.trim()) {
+        toast.error("Выберите страну.");
+        return false;
+      }
+      if (!city.trim()) {
+        toast.error("Заполните город.");
+        return false;
+      }
+      const ageNumber = Number(age);
+      if (!age || !Number.isFinite(ageNumber) || ageNumber < 7 || ageNumber > 25) {
+        toast.error("Возраст должен быть от 7 до 25 лет.");
+        return false;
+      }
+      if (!getSpecialization()) {
+        toast.error("Выберите или введите направление.");
+        return false;
+      }
+      if (kind === "freelancer") {
+        const years = Number(yearsExp);
+        if (yearsExp === "" || !Number.isFinite(years) || years < 0 || years > 20) {
+          toast.error("Укажите опыт от 0 до 20 лет.");
+          return false;
+        }
+        const rate = Number(hourlyRate);
+        if (hourlyRate === "" || !Number.isFinite(rate) || rate < 0) {
+          toast.error("Укажите желаемое вознаграждение.");
+          return false;
+        }
+        if (selectedSkills.length === 0) {
+          toast.error("Выберите хотя бы один навык или сильную сторону.");
+          return false;
+        }
+      }
+      if (kind === "client" && getSkills().length === 0) {
+        toast.error("Укажите, какие таланты вы ищете.");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const goToStep = (targetStep: number) => {
+    if (!validateStep(targetStep)) return;
+    setStep(targetStep);
+  };
+
+  const validateBeforeSave = () => {
+    if (!validateStep(3)) return false;
+    if (!bio.trim()) {
+      toast.error("Заполните описание о себе и достижениях.");
+      return false;
+    }
+    if (!github.trim()) {
+      toast.error("Добавьте ссылку на портфолио или GitHub.");
+      return false;
+    }
+    if (!linkedin.trim()) {
+      toast.error("Добавьте соцсеть или резюме.");
+      return false;
+    }
+    return true;
+  };
+
   const save = async () => {
     if (!user) return;
+    if (!validateBeforeSave()) return;
     setSaving(true);
-    const specialization =
-      specializationChoice === "Другое" ? specializationOther.trim() : specializationChoice;
+    const specialization = getSpecialization();
     const { error } = await supabase.from("profiles").upsert(
       {
         id: user.id,
-        full_name: fullName,
-        nickname: nickname || null,
+        full_name: fullName.trim(),
+        nickname: nickname.trim(),
         username: username ? username.toLowerCase().trim() : null,
         kind,
         country,
-        city,
+        city: city.trim(),
         age: age ? Number(age) : null,
         specialization,
-        skills: selectedSkills.length
-          ? selectedSkills
-          : skills
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean),
+        skills: getSkills(),
         years_experience: yearsExp ? Number(yearsExp) : null,
         availability,
         hourly_rate: hourlyRate ? Number(hourlyRate) : null,
-        bio,
-        links: { github, linkedin },
+        bio: bio.trim(),
+        links: { github: github.trim(), linkedin: linkedin.trim() },
         onboarded: true,
       },
       { onConflict: "id" },
@@ -142,12 +233,12 @@ function Onboarding() {
                 <User className="size-5 mb-3 text-primary" />
                 <div className="font-medium">Потребитель</div>
                 <div className="text-sm text-muted-foreground">
-                  Публиковать задания, отборы, секции и мероприятия.
+                  Публиковать объявления о себе, команде и поиске талантов.
                 </div>
               </button>
             </div>
             <div className="mt-8 flex justify-end">
-              <Button onClick={() => setStep(2)}>Далее</Button>
+              <Button onClick={() => goToStep(2)}>Далее</Button>
             </div>
           </>
         )}
@@ -281,7 +372,7 @@ function Onboarding() {
 
               {kind === "client" && (
                 <div className="space-y-1.5">
-                  <Label>Какие таланты вы обычно ищете (необязательно)</Label>
+                  <Label>Какие таланты вы обычно ищете</Label>
                   <Input
                     placeholder="Футбол, рисунок, робототехника"
                     value={skills}
@@ -294,7 +385,7 @@ function Onboarding() {
               <Button variant="ghost" onClick={() => setStep(1)}>
                 Назад
               </Button>
-              <Button onClick={() => setStep(3)}>Далее</Button>
+              <Button onClick={() => goToStep(3)}>Далее</Button>
             </div>
           </>
         )}

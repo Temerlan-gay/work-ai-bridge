@@ -87,6 +87,26 @@ function RegisterPage() {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!fullName.trim()) {
+      toast.error("Заполните имя и фамилию.");
+      return;
+    }
+    if (!talentCategory.trim()) {
+      toast.error("Выберите сферу таланта.");
+      return;
+    }
+    if (!specialization.trim()) {
+      toast.error("Выберите роль или профессию.");
+      return;
+    }
+    if (!email.trim()) {
+      toast.error("Введите email.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Пароль должен быть минимум 6 символов.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -95,7 +115,7 @@ function RegisterPage() {
         email: email.trim().toLowerCase(),
         password,
         options: {
-          data: { full_name: fullName, talent_category: talentCategory, specialization },
+          data: { full_name: fullName.trim(), talent_category: talentCategory, specialization },
           emailRedirectTo: `${window.location.origin}/onboarding`,
         },
       });
