@@ -27,15 +27,29 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
       .from("skill_catalog")
       .select("id,name,category,is_custom")
       .order("name")
-      .then(({ data }) => {
-        if (data && data.length) setAll(data as Skill[]);
-        else setAll(SKILL_CATALOG.map((n) => ({ id: n, name: n, category: null, is_custom: false })));
+      .then(({ data, error }) => {
+        const merged = new Map<string, Skill>();
+        for (const name of SKILL_CATALOG) {
+          merged.set(name.toLowerCase(), { id: name, name, category: null, is_custom: false });
+        }
+        if (!error) {
+          for (const skill of (data ?? []) as Skill[]) {
+            merged.set(skill.name.toLowerCase(), skill);
+          }
+        }
+        setAll(
+          Array.from(merged.values()).sort((a, b) =>
+            a.name.localeCompare(b.name, "ru", { sensitivity: "base" }),
+          ),
+        );
       });
   }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return all.filter((s) => !value.includes(s.name) && (!q || s.name.toLowerCase().includes(q))).slice(0, 30);
+    return all
+      .filter((s) => !value.some((v) => v.toLowerCase() === s.name.toLowerCase()) && (!q || s.name.toLowerCase().includes(q)))
+      .slice(0, 40);
   }, [all, query, value]);
 
   const exactMatch = useMemo(
@@ -44,7 +58,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
   );
 
   const toggle = (name: string) => {
-    if (value.includes(name)) onChange(value.filter((v) => v !== name));
+    if (value.some((v) => v.toLowerCase() === name.toLowerCase())) onChange(value.filter((v) => v.toLowerCase() !== name.toLowerCase()));
     else if (value.length < max) onChange([...value, name]);
   };
 
@@ -53,7 +67,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
     if (!name || exactMatch) return;
     if (!user) {
       // Allow local-only for unauthenticated flows (register pre-signup)
-      if (!value.includes(name) && value.length < max) onChange([...value, name]);
+      if (!value.some((v) => v.toLowerCase() === name.toLowerCase()) && value.length < max) onChange([...value, name]);
       setQuery("");
       return;
     }
@@ -69,7 +83,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
       return;
     }
     if (data) setAll((prev) => [...prev, data as Skill]);
-    if (!value.includes(name) && value.length < max) onChange([...value, name]);
+    if (!value.some((v) => v.toLowerCase() === name.toLowerCase()) && value.length < max) onChange([...value, name]);
     setQuery("");
   };
 
@@ -84,7 +98,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
                 type="button"
                 onClick={() => toggle(s)}
                 className="rounded-full hover:bg-background/60 p-0.5"
-                aria-label={`Remove ${s}`}
+                aria-label={`Удалить ${s}`}
               >
                 <X className="size-3" />
               </button>
@@ -97,7 +111,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search skills or type to add custom…"
+          placeholder="Поиск навыка или свой вариант..."
           className="pl-8"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -116,7 +130,7 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
             className="text-xs rounded-full border border-border bg-background hover:bg-accent px-2.5 py-1 transition"
           >
             {s.name}
-            {s.is_custom && <span className="ml-1 text-muted-foreground">·custom</span>}
+            {s.is_custom && <span className="ml-1 text-muted-foreground">·свой</span>}
           </button>
         ))}
         {query.trim() && !exactMatch && (
@@ -126,11 +140,11 @@ export function SkillMultiSelect({ value, onChange, max = 20 }: Props) {
             disabled={adding}
             className="text-xs rounded-full border border-dashed border-primary text-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-1 inline-flex items-center gap-1"
           >
-            <Plus className="size-3" /> Add "{query.trim()}"
+            <Plus className="size-3" /> Добавить "{query.trim()}"
           </button>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">{value.length}/{max} selected · Can't find it? Type and press Enter to add a custom skill.</p>
+      <p className="text-xs text-muted-foreground">{value.length}/{max} выбрано · Если навыка нет, напишите свой и нажмите Enter.</p>
     </div>
   );
 }
