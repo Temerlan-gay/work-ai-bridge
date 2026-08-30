@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Check, Coins, Copy, Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Coins, CreditCard, Rocket, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,13 @@ export const Route = createFileRoute("/_authenticated/workcoins")({
   head: () => ({
     meta: [
       { title: "WorkCoins - TalentBridge" },
-      { name: "description", content: "Баланс WorkCoins, продвижение профиля и безопасное пополнение." },
+      { name: "description", content: "Баланс WorkCoins, продвижение профиля и безопасное пополнение картой." },
     ],
   }),
   component: WorkCoinsPage,
 });
 
 type Tx = { id: string; amount: number; reason: string; created_at: string };
-
-const PAYMENT_CARD = "4400 4302 0076 0566";
 
 const PACKAGES = [
   { id: "s", coins: 50, price: 200, label: "Стартовый" },
@@ -43,7 +41,7 @@ function WorkCoinsPage() {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [selectedPackage, setSelectedPackage] = useState(PACKAGES[1]);
   const [payerName, setPayerName] = useState("");
-  const [paymentNote, setPaymentNote] = useState("");
+  const [payerEmail, setPayerEmail] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -70,26 +68,20 @@ function WorkCoinsPage() {
     };
   }, [user]);
 
-  const copyCard = async () => {
-    await navigator.clipboard.writeText(PAYMENT_CARD.replace(/\s/g, ""));
-    toast.success("Номер для перевода скопирован");
-  };
-
-  const submitPaymentNotice = () => {
+  const startCardPayment = () => {
     if (!payerName.trim()) {
-      toast.info("Укажите имя отправителя, чтобы платеж было проще проверить.");
+      toast.info("Укажите имя плательщика.");
       return;
     }
 
-    toast.success("Заявка на пополнение создана", {
+    toast.info("Платежный сервис еще не подключен", {
       description:
-        "После ручной проверки перевода администратор начислит WorkCoins. Данные банковской карты пользователя сайт не хранит.",
+        "После подключения эквайринга пользователь будет вводить данные карты на защищенной странице банка, а деньги будут поступать владельцу проекта.",
     });
-    setPaymentNote("");
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <Link
@@ -129,7 +121,7 @@ function WorkCoinsPage() {
           <Card className="flex items-start gap-3 p-4">
             <Sparkles className="mt-0.5 size-5 text-primary" />
             <div>
-              <div className="font-medium">Выделиться для наставников</div>
+              <div className="font-medium">Быстрее попасться на глаза</div>
               <div className="text-sm text-muted-foreground">
                 Продвижение помогает секциям, клубам и организаторам быстрее увидеть подходящего подростка.
               </div>
@@ -140,7 +132,7 @@ function WorkCoinsPage() {
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Пополнить WorkCoins</h2>
-        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           <div className="grid gap-4 sm:grid-cols-3">
             {PACKAGES.map((p) => (
               <Card
@@ -151,7 +143,7 @@ function WorkCoinsPage() {
                 onClick={() => setSelectedPackage(p)}
               >
                 {p.popular && (
-                  <span className="absolute -top-2 right-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                  <span className="absolute -top-2 right-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">
                     Хит
                   </span>
                 )}
@@ -174,35 +166,29 @@ function WorkCoinsPage() {
             <div className="flex items-start gap-2">
               <ShieldCheck className="mt-0.5 size-5 text-primary" />
               <div>
-                <div className="font-medium">Безопасное пополнение</div>
+                <div className="font-medium">Оплата банковской картой</div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Сайт не просит номер карты, срок действия или CVV. Для пополнения переведите сумму
-                  выбранного пакета на реквизит ниже.
+                  Покупатель вводит данные карты только на защищенной странице платежного сервиса. TalentBridge не хранит номер карты, срок действия и CVV.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <div className="text-xs text-muted-foreground">Перевод на карту</div>
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <span className="font-mono text-sm">{PAYMENT_CARD}</span>
-                <Button variant="outline" size="icon" onClick={copyCard}>
-                  <Copy className="size-4" />
-                </Button>
-              </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+              Деньги поступают владельцу проекта через настройки эквайринга. Реквизиты владельца не показываются пользователям на сайте.
             </div>
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label>Имя отправителя</Label>
-                <Input value={payerName} onChange={(e) => setPayerName(e.target.value)} />
+                <Label>Имя плательщика</Label>
+                <Input value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="Имя на оплате" />
               </div>
               <div className="space-y-1.5">
-                <Label>Комментарий или последние 4 цифры перевода</Label>
-                <Input value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} />
+                <Label>Email для чека</Label>
+                <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="mail@example.com" />
               </div>
-              <Button className="w-full" onClick={submitPaymentNotice}>
-                Сообщить о переводе {selectedPackage.price} ₽
+              <Button className="w-full" onClick={startCardPayment}>
+                <CreditCard className="size-4" />
+                Оплатить {selectedPackage.price} ₽ картой
               </Button>
             </div>
           </Card>
@@ -242,8 +228,7 @@ function WorkCoinsPage() {
           <Check className="size-4 text-primary" />
           Важно
         </div>
-        Автоматическое зачисление денег и прием банковских карт нужно подключать через платежный
-        сервис. Текущая версия не хранит платежные данные пользователей.
+        Для настоящего автоматического пополнения нужно подключить платежный сервис, например YooKassa, CloudPayments, Stripe или другой эквайринг.
       </section>
     </div>
   );
