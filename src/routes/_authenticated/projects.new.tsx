@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/projects/new")({
-  head: () => ({ meta: [{ title: "Новая возможность - TalentBridge" }] }),
+  head: () => ({ meta: [{ title: "Новое объявление потребителя - TalentBridge" }] }),
   component: NewOpportunity,
 });
 
@@ -49,7 +49,7 @@ function NewOpportunity() {
   const generateDraft = async () => {
     const prompt = brief.trim() || description.trim();
     if (prompt.length < 10) {
-      toast.error("Сначала опишите идею возможности.");
+      toast.error("Сначала опишите, кто вы и какого подростка ищете.");
       return;
     }
     setAiLoading(true);
@@ -135,7 +135,7 @@ function NewOpportunity() {
       toast.error(error.message);
       return;
     }
-    toast.success("Возможность опубликована");
+    toast.success("Объявление опубликовано");
     navigate({ to: "/dashboard" });
   };
 
@@ -148,24 +148,24 @@ function NewOpportunity() {
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_320px]">
         <section className="space-y-5 rounded-lg border border-border bg-card p-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Новая возможность</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Новое объявление о поиске таланта</h1>
             <p className="text-sm text-muted-foreground">
-              Создайте секцию, отбор, конкурс, команду, стажировку или задачу для подростков.
+              Расскажите о себе, команде или организации, кого ищете и какие условия готовы предложить подростку.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Краткое описание для AI</Label>
+            <Label>Кратко: кто вы и кого ищете</Label>
             <Textarea
               rows={3}
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
-              placeholder="Нужен подросток-футболист 14-16 лет в команду района..."
+              placeholder="Я тренер, 1 год стажа. Набираю подростков 12-15 лет в футбольную команду, готовы платить 25 долларов в месяц..."
             />
           </div>
           <Button variant="outline" onClick={generateDraft} disabled={aiLoading}>
             {aiLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            Создать черновик
+            Помочь оформить объявление
           </Button>
 
           {suggestion && (
@@ -181,12 +181,17 @@ function NewOpportunity() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>Название</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Label>Заголовок объявления</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Тренер ищет футболистов 12-15 лет в команду" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>Описание</Label>
-              <Textarea rows={8} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Label>О себе, команде и условиях</Label>
+              <Textarea
+                rows={8}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={"Например:\nЯ тренер по футболу, стаж 1 год. У нас команда для подростков, тренировки 3 раза в неделю. Ищем нападающих и вратаря 12-15 лет. Готовы платить 25 долларов в месяц или обсуждать условия лично."}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Сфера</Label>
@@ -198,21 +203,21 @@ function NewOpportunity() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Нужные навыки</Label>
-              <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Футбол, скорость, командная игра" />
+              <Label>Каких талантов ищете</Label>
+              <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Футбол, скорость, командная игра, вратарь" />
             </div>
             <div className="space-y-1.5">
-              <Label>Вознаграждение или бюджет ($)</Label>
-              <Input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="0, 500 или 400-800" />
+              <Label>Готовы платить ($ в месяц)</Label>
+              <Input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="25" />
             </div>
             <div className="space-y-1.5">
-              <Label>Дата окончания</Label>
+              <Label>До какой даты ищете</Label>
               <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
             </div>
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={submit} disabled={saving}>{saving ? "Публикуем..." : "Опубликовать"}</Button>
+            <Button onClick={submit} disabled={saving}>{saving ? "Публикуем..." : "Опубликовать объявление"}</Button>
           </div>
         </section>
 

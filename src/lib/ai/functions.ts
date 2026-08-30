@@ -52,18 +52,18 @@ export const aiGenerateProjectDraft = createServerFn({ method: "POST" })
   .inputValidator(z.object({ brief: z.string().min(10).max(4000), category: z.string().optional() }))
   .handler(async ({ data, context }) => {
     const fallback = {
-      title: "Новая возможность",
+      title: "Потребитель ищет талантливого подростка",
       description: data.brief,
       requirements: [],
       timeline: "По договоренности",
-      budgetEstimate: { min: 100, max: 500, currency: "USD" },
+      budgetEstimate: { min: 25, max: 25, currency: "USD/month" },
       skills: [],
     };
     const result = await runAi(
       context,
       "project_generator",
       "generate_project_draft",
-      `Generate a TalentBridge opportunity draft for teenagers from this brief. It can be a team search, contest, school project, club, mentorship, volunteer task, internship, or paid task. Category: ${data.category ?? "unknown"}. Brief: ${data.brief}. JSON shape: {title, description, requirements: string[], timeline, budgetEstimate:{min,max,currency}, skills:string[]}.`,
+      `Generate a TalentBridge consumer announcement for finding talented teenagers. The author is a consumer, coach, team, club, mentor, or organization describing themselves, their experience, who they are looking for, and monthly payment or conditions. Do not write it like a one-time freelance task. Category: ${data.category ?? "unknown"}. Brief: ${data.brief}. JSON shape: {title, description, requirements: string[], timeline, budgetEstimate:{min,max,currency}, skills:string[]}.`,
       fallback,
     );
     return ProjectDraftSchema.parse(result);

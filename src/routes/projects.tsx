@@ -61,7 +61,7 @@ const DEFAULT_FILTERS: Filters = {
   age: [7, 25],
   city: "",
   format: "any",
-  budget: [0, 500000],
+  budget: [0, 5000],
   deadline: "any",
   qualities: [],
   sort: "top",
@@ -85,6 +85,8 @@ const OPPORTUNITY_QUALITIES = [
   "лидер",
   "командный",
   "волонтер",
+  "тренер",
+  "команда",
   "наставник",
   "публичные выступления",
   "креативность",
@@ -224,7 +226,7 @@ function OpportunitiesBrowse() {
     (filters.age[0] !== 7 || filters.age[1] !== 25 ? 1 : 0) +
     (filters.city.trim() ? 1 : 0) +
     (filters.format !== "any" ? 1 : 0) +
-    (filters.budget[0] !== 0 || filters.budget[1] !== 500000 ? 1 : 0) +
+    (filters.budget[0] !== 0 || filters.budget[1] !== 5000 ? 1 : 0) +
     (filters.deadline !== "any" ? 1 : 0);
 
   const filtersPanel = (
@@ -239,7 +241,7 @@ function OpportunitiesBrowse() {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">Пол участника</Label>
+        <Label className="text-xs">Кого ищут</Label>
         <Select value={filters.gender} onValueChange={(v) => setFilters((f) => ({ ...f, gender: v as Gender }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -288,7 +290,7 @@ function OpportunitiesBrowse() {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">Формат</Label>
+        <Label className="text-xs">Формат занятий</Label>
         <Select value={filters.format} onValueChange={(v) => setFilters((f) => ({ ...f, format: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -302,20 +304,20 @@ function OpportunitiesBrowse() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Бюджет</Label>
-          <span className="text-xs text-muted-foreground">{filters.budget[0]}-{filters.budget[1]} ₽</span>
+          <Label className="text-xs">Оплата в месяц</Label>
+          <span className="text-xs text-muted-foreground">${filters.budget[0]}-${filters.budget[1]}</span>
         </div>
         <Slider
           value={filters.budget}
           min={0}
-          max={500000}
-          step={5000}
+          max={5000}
+          step={25}
           onValueChange={(v) => setFilters((f) => ({ ...f, budget: [v[0], v[1]] as [number, number] }))}
         />
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">Срок</Label>
+        <Label className="text-xs">До какой даты ищут</Label>
         <Select value={filters.deadline} onValueChange={(v) => setFilters((f) => ({ ...f, deadline: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -336,14 +338,14 @@ function OpportunitiesBrowse() {
       <main className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Открытые возможности</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{filtered.length} из {items.length} предложений</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Объявления потребителей</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{filtered.length} из {items.length} объявлений</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1 sm:w-80">
               <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Футбол, художник, 9-12 лет, город..."
+                placeholder="Тренер, команда, футболист, 9-12 лет..."
                 value={filters.q}
                 onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
                 className="pl-8"
@@ -365,9 +367,9 @@ function OpportunitiesBrowse() {
               <SelectContent>
                 <SelectItem value="top">Сначала поднятые</SelectItem>
                 <SelectItem value="recent">Новые</SelectItem>
-                <SelectItem value="deadline">Скоро дедлайн</SelectItem>
-                <SelectItem value="budget_high">Бюджет выше</SelectItem>
-                <SelectItem value="budget_low">Бюджет ниже</SelectItem>
+                <SelectItem value="deadline">Скоро заканчивается</SelectItem>
+                <SelectItem value="budget_high">Оплата выше</SelectItem>
+                <SelectItem value="budget_low">Оплата ниже</SelectItem>
               </SelectContent>
             </Select>
             <Sheet>
@@ -391,8 +393,8 @@ function OpportunitiesBrowse() {
         <section className="mb-6 rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold">Качества и направления</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Выберите несколько признаков, например: футболист, мальчик, 9-12 лет, очно.</p>
+              <h2 className="text-sm font-semibold">Кого ищут потребители</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Можно найти объявления вроде: тренер, команда, футболист, мальчик, 9-12 лет, очно.</p>
             </div>
             {filters.qualities.length > 0 && (
               <Button variant="ghost" size="sm" onClick={() => setFilters((f) => ({ ...f, qualities: [] }))}>Очистить</Button>
@@ -430,7 +432,7 @@ function OpportunitiesBrowse() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-12 text-center">
-                <p className="text-sm text-muted-foreground">По выбранным качествам возможности не найдены. Попробуйте убрать часть фильтров или изменить возраст.</p>
+                <p className="text-sm text-muted-foreground">По выбранным качествам объявления не найдены. Попробуйте убрать часть фильтров или изменить возраст.</p>
                 <Button variant="link" onClick={reset}>Сбросить фильтры</Button>
               </div>
             ) : (
@@ -452,7 +454,7 @@ function OpportunitiesBrowse() {
                     </div>
                     <div className="mt-4 flex items-center justify-between gap-3 text-sm">
                       <span className="font-medium text-primary">
-                        {p.budget ? `${Number(p.budget).toLocaleString("ru-RU")} ₽` : "Без оплаты / по условиям"}
+                        {p.budget ? `$${Number(p.budget).toLocaleString("ru-RU")}/мес` : "Оплата по договоренности"}
                       </span>
                       {p.deadline && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

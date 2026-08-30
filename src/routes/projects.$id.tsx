@@ -14,7 +14,7 @@ import { openOrCreateChat } from "@/lib/open-chat";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects/$id")({
-  head: () => ({ meta: [{ title: "Возможность - TalentBridge" }] }),
+  head: () => ({ meta: [{ title: "Объявление потребителя - TalentBridge" }] }),
   component: OpportunityDetail,
 });
 
@@ -82,17 +82,17 @@ function OpportunityDetail() {
         <div className="text-xs text-muted-foreground">{project.category}</div>
         <h1 className="text-3xl font-semibold tracking-tight">{project.title}</h1>
         <div className="text-sm text-muted-foreground">
-          Условия:{" "}
+          Готовы платить:{" "}
           <span className="font-medium text-foreground">
-            {project.budget ? `$${project.budget}` : "без оплаты / по договоренности"}
+            {project.budget ? `$${project.budget}/мес` : "по договоренности"}
           </span>{" "}
-          · До: {project.deadline ?? "не указано"}
+          · Ищут до: {project.deadline ?? "дата не указана"}
         </div>
         <p className="whitespace-pre-wrap text-foreground/90">{project.description}</p>
 
         {user && user.id !== project.client_id && (
           <Button variant="outline" onClick={messageOrganizer}>
-            <MessageSquare className="size-4" /> Написать организатору
+            <MessageSquare className="size-4" /> Написать потребителю
           </Button>
         )}
 
@@ -107,22 +107,22 @@ function OpportunityDetail() {
 
         {user && user.id !== project.client_id && project.status === "open" && (
           <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
-            <h2 className="font-semibold">Отправить заявку на участие</h2>
+            <h2 className="font-semibold">Откликнуться на объявление</h2>
             <div className="space-y-1.5">
               <Label>Почему вы подходите</Label>
-              <Textarea rows={4} value={cover} onChange={(e) => setCover(e.target.value)} />
+              <Textarea rows={4} value={cover} onChange={(e) => setCover(e.target.value)} placeholder="Расскажите о себе, опыте, возрасте, городе и почему вам интересно это предложение." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Ожидаемые условия ($)</Label>
+                <Label>Желаемая оплата ($/мес)</Label>
                 <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Срок участия, дней</Label>
+                <Label>Через сколько дней готовы начать</Label>
                 <Input type="number" value={days} onChange={(e) => setDays(e.target.value)} />
               </div>
             </div>
-            <Button onClick={submit}>Отправить заявку</Button>
+            <Button onClick={submit}>Отправить отклик</Button>
           </section>
         )}
       </main>
